@@ -1,4 +1,3 @@
-
 #define NDS
 #define ENABLEWR
 #include "global.h"
@@ -13,13 +12,11 @@ NTR_CONFIG* ntrConfig;
 FS_archive sdmcArchive = { 0x9, (FS_path){ PATH_EMPTY, 1, (u8*)"" } };
 Handle fsUserHandle = 0;
 
-
 u32 StartMode = 0;
 u32 IoBasePad ;
 u32 IoBaseLcd ;
 u32 IoBasePdc ;
 u32 ShowDbgFunc;
-
 
 RT_HOOK HomeFSReadHook;
 typedef u32(*FSReadTypeDef) (u32 a1, u32 a2, u32 a3, u32 a4, u32 buffer, u32 size);
@@ -29,7 +26,6 @@ RT_HOOK HomeCardUpdateInitHook;
 u32 NTRMenuHotkey = 0x0C00;
 u32 ScreenshotHotkey = 0;
 
-
 #define STACK_SIZE 0x4000
 
 u32 isInDebugMode() {
@@ -38,8 +34,6 @@ u32 isInDebugMode() {
 	}
 	return 0;
 }
-
-
 
 u32 initValuesFromFIRM() {
 	u32 kversion = *(unsigned int *)0x1FF80000;
@@ -125,8 +119,6 @@ showDbg("fatal. LR: %08x", lr, 0);
 releaseVideo();
 }
 
-
-
 void viewFile(FS_archive arc, u8 * path) {
 	u8 buf[0x5000];
 	u32 off = 0;
@@ -192,13 +184,11 @@ void fileManager() {
 	FSUSER_CloseArchive(fsUserHandle, &arc);
 }
 
-
 void checkExitFlag() {
 	if (g_nsConfig->exitFlag) {
 		svc_exitThread();
 	}
 }
-
 
 u32 HomeFSReadCallback(u32 a1, u32 a2, u32 a3, u32 a4, u32 buffer, u32 size) {
 	u32 ret;
@@ -245,8 +235,6 @@ void magicKillProcess(u32 pid) {
 	kmemcpy(KProcess + 4, &t, 4);
 	svc_closeHandle(hProcess);
 }
-
-
 
 void do_screen_shoot();
 
@@ -323,9 +311,6 @@ void threadStart() {
 	}
 }
 
-
-
-
 void initConfigureMemory() {
 	u32 ret;
 	u32 outAddr;
@@ -347,8 +332,6 @@ void initConfigureMemory() {
 	
 }
 
-
-
 void _ReturnToUser();
 
 void startupFromInject() {
@@ -357,7 +340,6 @@ void startupFromInject() {
 	disp(100, 0x10000ff);
 	svc_exitThread(0);
 }
-
 
 extern int _BootArgs[];
 
@@ -425,8 +407,6 @@ void initParamsFromLegacyBootNtr() {
 	ntrConfig->KProcessPIDOffset = 0xBC;
 	ntrConfig->KProcessCodesetOffset = 0xB8;
 
-
-
 	loadParams();
 }
 
@@ -451,104 +431,88 @@ void initFromSoc() {
 }
 
 int main() {
-	StartMode = _BootArgs[0];
-	//showDbg("", 0, sizeof(NS_CONFIG));
-	if (StartMode == 0) {
-		// load from bootNTR
-		if (_BootArgs[1] == 0xb00d) {
-			initParamsFromBootNtr();
-		} else {
-			initParamsFromLegacyBootNtr();
-		}
+    
+	switch(_BootArgs[0]){   //StartMode
+        case 0:
+        {
+            // load from bootNTR
+            if (_BootArgs[1] == 0xb00d) 
+                initParamsFromBootNtr();
+            else 
+                initParamsFromLegacyBootNtr();
 
-		sdmcArchive = (FS_archive){ 0x9, (FS_path){ PATH_EMPTY, 1, (u8*)"" } };
+            sdmcArchive = (FS_archive){ 0x9, (FS_path){ PATH_EMPTY, 1, (u8*)"" } };
 
+            if ((ntrConfig->HomeMenuVersion == 0) || (ntrConfig->firmVersion == 0)) {
+                showMsg("firmware or homemenu version not supported");
+                u32 kversion = *(unsigned *)0x1FF80000;
+                showDbg("kversion: %08x", kversion, 0);
 
-		if ((ntrConfig->HomeMenuVersion == 0) || (ntrConfig->firmVersion == 0)) {
-			showMsg("firmware or homemenu version not supported");
-			dumpCode(0xdff80000, 0x80000, "/axiwram.dmp");
-			svc_sleepThread(1000000000);
-			dumpRemoteProcess(0, "/pid0.dmp", 0x00100000);
-			dumpRemoteProcess(2, "/pid2.dmp", 0x00100000);
-			dumpRemoteProcess(3, "/pid3.dmp", 0x00100000);
-			dumpRemoteProcess(0xf, "/pidf.dmp", 0x00100000);
-			showMsg("current firmware not supported. \n"
-					"please send feedback to\n"
-					" cell9@yandex.com.");
-			u32 kversion = *(unsigned int *)0x1FF80000;
-			showDbg("kversion: %08x", kversion, 0);
+                if ((_BootArgs[1] != 0xb00d)) {
+                    while (1) svc_sleepThread(1000000000);
+                }
 
-			if ((_BootArgs[1] != 0xb00d)) {
-				while (1) {
+            }	else {
+                showMsg("do kernelhax");
+                kDoKernelHax();
+                showMsg("kernelhax done");
+                doSomethingInitSrv();
+                disp(100, 0x1ff0000);
+                showDbg("homemenu ver: %08x", ntrConfig->HomeMenuVersion, 0);
+                injectToHomeMenu();
+            }
+            
+            break;
+        }
+        case 1:
+        {
+            // init from inject
+            initConfigureMemory();
+            initParamsFromInject();
+            nsInitDebug();
 
-					svc_sleepThread(1000000000);
-				}
-			}
-			return 0;
+            u32 oldPC = g_nsConfig->startupInfo[2];
 
-		}	else {
-			showMsg("do kernelhax");
-			kDoKernelHax();
-			showMsg("kernelhax done");
-			doSomethingInitSrv();
-			disp(100, 0x1ff0000);
-			showDbg("homemenu ver: %08x", ntrConfig->HomeMenuVersion, 0);
-			injectToHomeMenu();
-		}
-		
-		//dumpRemoteProcess(0xf, "/pidf");
-		//dumpCode(0xdff80000, 0x80000, "/axiwram");
+            memcpy((void*)oldPC, g_nsConfig->startupInfo, 8);
+            rtFlushInstructionCache((void*)oldPC, 8);
+            rtGenerateJumpCode(oldPC, (void*)_ReturnToUser);
+            rtFlushInstructionCache((void*)_ReturnToUser, 8);
+            doSomething();
 
-		return 0;
-	}
+            u32 currentPid = getCurrentProcessId();
+            Handle handle;
 
-	if (StartMode == 1) {
-		// init from inject
-		initConfigureMemory();
-		initParamsFromInject();
-		nsInitDebug();
+            if (currentPid == 0x1a) {
+                disp(100, 0x1ff00ff);
+                remotePlayMain();
+            }
 
-		u32 oldPC = g_nsConfig->startupInfo[2];
+            if (currentPid == ntrConfig->HomeMenuPid) {
+                // load from HomeMenu
+                threadStack = (u32*)((u32)NS_CONFIGURE_ADDR + 0x1000);
+                svc_createThread(&handle, (void*)threadStart, 0, &threadStack[(STACK_SIZE / 4) - 10], 0x10, 1);
+            } else {
 
-		memcpy((void*)oldPC, g_nsConfig->startupInfo, 8);
-		rtFlushInstructionCache((void*)oldPC, 8);
-		rtGenerateJumpCode(oldPC, (void*)_ReturnToUser);
-		rtFlushInstructionCache((void*)_ReturnToUser, 8);
-		doSomething();
-
-		u32 currentPid = getCurrentProcessId();
-		Handle handle;
-
-		if (currentPid == 0x1a) {
-			disp(100, 0x1ff00ff);
-			remotePlayMain();
-		}
-
-		if (currentPid == ntrConfig->HomeMenuPid) {
-			// load from HomeMenu
-			threadStack = (u32*)((u32)NS_CONFIGURE_ADDR + 0x1000);
-			svc_createThread(&handle, (void*)threadStart, 0, &threadStack[(STACK_SIZE / 4) - 10], 0x10, 1);
-		}
-		else {
-
-
-			threadStack = (u32*)((u32)NS_CONFIGURE_ADDR + 0x1000);
-			if ((isInDebugMode()) || (g_nsConfig->startupCommand == NS_STARTCMD_DEBUG)) {
-				svc_createThread(&handle, (void*)startupFromInject, 0, &threadStack[(STACK_SIZE / 4) - 10], 0x3f, 0xFFFFFFFE);
-				svc_sleepThread(1000000000);
-			}
-			if (currentPid == ntrConfig->PMPid) {
-				// load from pm
-				initFromInjectPM();
-			}
-			else {
-				if (g_nsConfig->startupCommand == NS_STARTCMD_INJECTGAME) {
-					disp(100, 0x100ff00);
-					initFromInjectGame();
-				}
-			}
-		}
-	}
+                threadStack = (u32*)((u32)NS_CONFIGURE_ADDR + 0x1000);
+                if ((isInDebugMode()) || (g_nsConfig->startupCommand == NS_STARTCMD_DEBUG)) {
+                    svc_createThread(&handle, (void*)startupFromInject, 0, &threadStack[(STACK_SIZE / 4) - 10], 0x3f, 0xFFFFFFFE);
+                    svc_sleepThread(1000000000);
+                }
+                if (currentPid == ntrConfig->PMPid) {
+                    // load from pm
+                    initFromInjectPM();
+                }
+                else {
+                    if (g_nsConfig->startupCommand == NS_STARTCMD_INJECTGAME) {
+                        disp(100, 0x100ff00);
+                        initFromInjectGame();
+                    }
+                }
+            }
+            break;
+        }
+        
+    }
 
 	return 0;
 }

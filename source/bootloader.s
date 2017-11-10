@@ -2,8 +2,10 @@
 .align(4);
 .section .text
 .global _Reset
+
 _Reset:
 b	_Start
+
 .global _BootArgs
 _BootArgs:
 nop
@@ -14,6 +16,7 @@ nop
 nop
 nop
 nop
+
 _Start:
 STMFD	SP!, {R0-R12, LR};
 MRS     R0, CPSR
@@ -46,7 +49,7 @@ nop
 nop
 
 mov		r0, sp
-bl		c_entry
+bl		main
 
 ldmfd	sp!, {r0}
 msr		cpsr, r0
@@ -76,4 +79,3 @@ __c_bss_start:
 .section .__bss_end
 .global __c_bss_end
 __c_bss_end:
-

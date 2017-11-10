@@ -4,6 +4,9 @@
 #include "3dstypes.h"
 #include "..\..\BootNTR\source\ntr_config.h"
 
+extern u32 __c_bss_start;
+extern u32 __c_bss_end;
+
 void createpad(void *counter, void *keyY, void *filename, u32 megabytes, u8 padnum);
 int main();
 

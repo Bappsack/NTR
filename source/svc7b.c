@@ -135,58 +135,63 @@ void keDoKernelHax() {
 	InvalidateEntireDataCache();
 }
 
-
-
 void remotePlayKernelCallback();
 
 void kernelCallback(u32 msr) {
 	typedef (*keRefHandleType)(u32, u32);
 	
-	//keRefHandleType keRefHandle = (keRefHandleType)0xFFF67D9C;
-	
-	u32 t = kernelArgs[0];
 	u32 i = 0;
-	if (t == 1) {
-		u32 size = kernelArgs[3];
-		u32 dst = kernelArgs[1];
-		u32 src = kernelArgs[2];
-		for (i = 0; i < size; i += 4) {
-			*(vu32*)(dst + i) = *(vu32*)(src + i);
-		}
-	}
-	
-	if (t == 2) {
-		//refKProcessByHandle
-		u32 hProcess = kernelArgs[1];
-		u32 kProcess = keRefHandle(*((u32*)0xFFFF9004) + KProcessHandleDataOffset, hProcess);
-		kernelArgs[1] = kProcess;
-	}
-	
-	if (t == 3) {
-		//getCurrentKProcess
-		kernelArgs[1] = *((u32*)0xFFFF9004);
-	}
-	
-	if (t == 4) {
-		//setCurrentKProcess
-		 *((u32*)0xFFFF9004) = kernelArgs[1];
-	}
-	
-	if (t == 5) {
-		//swapPid
-		u32 kProcess = kernelArgs[1];
-		u32 newPid = kernelArgs[2];
-		kernelArgs[2] = *(u32*)(kProcess + KProcessPIDOffset);
-		*(u32*)(kProcess + KProcessPIDOffset) = newPid;
-	}
-
-	if (t == 6) {
-		keDoKernelHax();
-	}
-
-	if (t == 7) {
-		remotePlayKernelCallback();
-	}
+    switch(kernelArgs[0]){
+        case 1:
+        {
+            u32 size = kernelArgs[3];
+            u32 dst = kernelArgs[1];
+            u32 src = kernelArgs[2];
+            for (i = 0; i < size; i += 4)
+                *(vu32*)(dst + i) = *(vu32*)(src + i);
+                
+            break;
+        }
+        case 2:
+        {
+            //refKProcessByHandle
+            u32 hProcess = kernelArgs[1];
+            u32 kProcess = keRefHandle(*(u32*)0xFFFF9004 + KProcessHandleDataOffset, hProcess);
+            kernelArgs[1] = kProcess;
+            break;
+        }
+        case 3:
+        {
+            //getCurrentKProcess
+            kernelArgs[1] = *(u32*)0xFFFF9004;
+            break;
+        }
+        case 4:
+        {
+            //setCurrentKProcess
+            *(u32*)0xFFFF9004 = kernelArgs[1];
+            break;
+        }
+        case 5:
+        {
+            //swapPid
+            u32 kProcess = kernelArgs[1];
+            u32 newPid = kernelArgs[2];
+            kernelArgs[2] = *(u32*)(kProcess + KProcessPIDOffset);
+            *(u32*)(kProcess + KProcessPIDOffset) = newPid;
+            break;
+        }
+        case 6:
+        {
+            keDoKernelHax();
+            break;
+        }
+        case 7:
+        {
+            remotePlayKernelCallback();
+            break;
+        }
+    }
 }
 
 u32 kSwapProcessPid(u32 kProcess, u32 newPid) {
@@ -226,13 +231,11 @@ void kmemcpy(void* dst, void* src, u32 size) {
 
 void kDoKernelHax() {
 	kernelArgs[0] = 6;
-
 	svc_backDoor(currentBackdoorHandler);
 }
 
 void kRemotePlayCallback() {
 	kernelArgs[0] = 7;
-
 	svc_backDoor(currentBackdoorHandler);
 }
 

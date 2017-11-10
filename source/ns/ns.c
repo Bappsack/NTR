@@ -396,18 +396,6 @@ int remotePlayBlitCompressed(BLIT_CONTEXT* ctx) {
 	if ((bpp == 3) || (bpp == 4)){
 		ctx->directCompress = 1;
 		return 0;
-		/*
-		for (x = 0; x < width; x++) {
-			for (y = 0; y < height; y++) {
-				dp[0] = sp[2];
-				dp[1] = sp[1];
-				dp[2] = sp[0];
-				dp += 3;
-				sp += bpp;
-			}
-			sp += ctx->blankInColumn;
-		}
-		*/
 	}
 	else {
 		svc_sleepThread(500000);
@@ -1836,19 +1824,6 @@ void nsInit(u32 initType) {
 	socuSharedBufferSize = 0x10000;
 	bufferSize = socuSharedBufferSize + rtAlignToPageSize(sizeof(NS_CONTEXT)) + STACK_SIZE;
 	u32 base = 0x06f00000;
-
-
-
-	//showDbg("nsInit", 0, 0);
-
-	/*
-	while(1) {
-	ret = svc_controlMemory(&outAddr, base, 0, heapSize, 0x3, 3);
-	base += 0x1000;
-	if (ret == 0) {
-	break;
-	}
-	}*/
 
 	if (g_nsConfig->initMode == NS_INITMODE_FROMRELOAD) {
 		outAddr = base;

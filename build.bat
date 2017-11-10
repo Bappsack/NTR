@@ -1,2 +1,2 @@
-set PATH=%PATH%;C:\devkitPro\devkitARM\bin
-build-jpeg.py
+build.py
+pause
