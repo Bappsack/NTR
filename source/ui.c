@@ -8,10 +8,17 @@ u32 bottomFrameBuffer = 0x1F000000;
 u32 allocFrameBuffer = 0;
 u32 hGSPProcess = 0;
 
+u32 themeColorBg = DARKGREY;
+u32 themeColorTxt = GREEN;
+u32 themeColorHdr = 0xEE9629;
 
+void setTheme(u32 bg, u32 txt, u32 hdr){
+    themeColorBg = bg;
+    themeColorTxt = txt;
+    themeColorHdr = hdr;
+}
 
-
-int builtinDrawString(u8* str, int x, int y, char r, char g, char b, int newLine) {
+int builtinDrawString(const char* str, int x, int y, u32 rgbTxt, u32 rgbBg, int newLine) {
 	int len = strlen(str);
 	int i, chWidth, currentX = x, totalLen = 0;
 
@@ -27,7 +34,7 @@ int builtinDrawString(u8* str, int x, int y, char r, char g, char b, int newLine
 			}
 			currentX = x;
 		}
-		paint_letter(str[i], currentX, y, r, g, b, BOTTOM_FRAME1);
+		paint_letter(str[i], currentX, y, rgbTxt, rgbBg, BOTTOM_FRAME1);
 		totalLen += chWidth;
 		currentX += chWidth;
 	}
@@ -36,17 +43,16 @@ int builtinDrawString(u8* str, int x, int y, char r, char g, char b, int newLine
 
 extern drawStringTypeDef plgDrawStringCallback;
 
-int drawString(u8* str, int x, int y, char r, char g, char b, int newLine) {
+int drawString(const char* str, int x, int y, u32 rgbTxt, u32 rgbBg, int newLine) {
 	if (plgDrawStringCallback) {
-		return plgDrawStringCallback(str, x, y, r, g, b, newLine);
+		return plgDrawStringCallback(str, x, y, rgbTxt, rgbBg, newLine);
 	}
-	return builtinDrawString(str, x, y, r, g, b, newLine);
+	return builtinDrawString(str, x, y, rgbTxt, rgbBg, newLine);
 }
 
-void print(char* s, int x, int y, char r, char g, char b){
-	drawString(s, x, y, r, g, b, 1);
+void print(const char* s, int x, int y, u32 rgbTxt){
+	drawString(s, x, y, rgbTxt, themeColorBg, 1);
 }
-
 
 u32 getPhysAddr(u32 vaddr) {
 	if(vaddr >= 0x14000000 && vaddr<0x1c000000)return vaddr + 0x0c000000;//LINEAR memory
@@ -58,7 +64,7 @@ u32 getPhysAddr(u32 vaddr) {
 u32 initDirectScreenAccess() {
 	u32 outAddr, ret;
 
-	ret = protectMemory(0x1F000000, 0x600000);
+	ret = protectMemory((void*)0x1F000000, 0x600000);
 	if (ret != 0) {
 		return ret;
 	}
@@ -93,27 +99,23 @@ u32 controlVideo(u32 cmd, u32 arg1, u32 arg2, u32 arg3) {
 
 void debounceKey() {
 	vu32 t;
-	for (t = 0; t < 0x00100000; t++) {
-	}
+	for (t = 0; t < 0x00100000; t++) {}
 }
 
 void delayUi() {
 	vu32 t;
-	for (t = 0; t < 0x03000000; t++) {
-	}
+	for (t = 0; t < 0x03000000; t++) {}
 }
 
 void mdelay(u32 m) {
 	vu32 t;
 	vu32 i;
 	for (i = 0; i < m; i++) {
-		for (t = 0; t < 0x00100000; t++) {
-		}
+		for (t = 0; t < 0x00100000; t++) {}
 	}
 }
 
 void updateScreen() {
-	
 	*(vu32*)(IoBasePdc + 0x568) = getPhysAddr(bottomFrameBuffer);
 	*(vu32*)(IoBasePdc + 0x56C) = getPhysAddr(bottomFrameBuffer);
 	*(vu32*)(IoBasePdc + 0x570) = 0x00080301;
@@ -135,96 +137,72 @@ s32 showMenuEx(u8* title, u32 entryCount, u8* captions[], u8* descriptions[],  u
 	u32 x = 10, y = 10, key = 0;
 	u32 drawStart, drawEnd;
 
-	if (selectOn < entryCount) {
-		select = selectOn;
-	}
+	if (selectOn < entryCount) select = selectOn;
 
 	while(1) {
-		blank(0, 0, 320, 240);
+        //Draw Men
+		clear(0, 0, 320, 240, themeColorBg);
 		pos = 10;
-		print(title, x, pos, 255, 0, 0);
-		print("http://44670.org/ntr", 10, 220, 0, 0, 255);
+		print(title, x, pos, themeColorHdr);
 		pos += 20;
 		drawStart = (select / maxCaptions) * maxCaptions;
 		drawEnd = drawStart + maxCaptions;
-		if (drawEnd > entryCount) {
-			drawEnd = entryCount;
-		}
+		if (drawEnd > entryCount) drawEnd = entryCount;
 		for (i = drawStart; i < drawEnd; i++) {
-			strcpy(buf, (i == select) ? " * " : "   ");
+			strcpy(buf, (i == select) ? " > " : "   ");
 			strcat(buf, captions[i]);
-			print(buf, x, pos, 0, 0, 0);
+			print(buf, x, pos, themeColorTxt);
 			pos += 13;
 		}
 		if (descriptions) {
 			if (descriptions[select]) {
-				print(descriptions[select], x, pos, 0, 0, 255);
+				print(descriptions[select], x, pos, BLUE);
 			}
 		}
 		updateScreen();
+        
+        //Menu navigation
 		while((key = waitKey()) == 0);
-		if (key == BUTTON_DD) {
-			select += 1;
-			if (select >= entryCount) {
-				select = 0;
-			}
-		}
-		if (key == BUTTON_DU) {
-			select -= 1;
-			if (select < 0) {
-				select = entryCount - 1;
-			}
-		}
-		if (key == BUTTON_A) {
-			return select;
-		}
-		if (key == BUTTON_B) {
-			return -1;
-		}
+        if(key == BUTTON_DD){
+            select += 1;
+            if (select >= entryCount) select = 0;
+        }
+        if(key == BUTTON_DU){
+            select -= 1;
+            if (select < 0) select = entryCount - 1;
+        }
+        if(key == BUTTON_A) return select;
+        if(key == BUTTON_B) return -1;
 	}
 }
 
-int showMsgNoPause(u8* msg) {
-	if (ShowDbgFunc) {
-		typedef void(*funcType)(char*);
-		((funcType)(ShowDbgFunc))(msg);
-		return 0;
-	}
-}
-
-int showMsg(u8* msg) {
-	if (ShowDbgFunc) {
-		typedef void(*funcType)(char*);
-		((funcType)(ShowDbgFunc))(msg);
+void Log(const char* fmt, ...) {    
+    va_list arp;
+    char buff[200] = {0};
+    
+	va_start(arp, fmt);
+	
+    xsprintf_va(buff, fmt, arp);
+    
+    if (ShowDbgFunc) {
+		typedef void(*funcType)(const char*);
+		((funcType)(ShowDbgFunc))(buff);
 		svc_sleepThread(1000000000);
 		return 0;
 	}
-	if (!allowDirectScreenAccess) {
-		return 0;
-	}
+	if (!allowDirectScreenAccess) return 0;
+    
 	acquireVideo();
-
-
 	while(1) {
-		blank(0, 0, 320, 240);
-		print(msg, 10, 10, 255, 0, 0);
-		print(plgTranslate("Press [B] to close."), 10, 220, 0, 0, 255);
+		clear(0, 0, 320, 240, themeColorBg);
+		print(buff, 10, 10, RED);
+		print(plgTranslate("Press [B] to close."), 10, 220, BLUE);
 		updateScreen();
-		u32 key = waitKey();
-		if (key == BUTTON_B) {
-			break;
-		}
+		if (waitKey() == BUTTON_B) break;
 	}
 	releaseVideo();
-	return 0;
-}
-
-void showDbg(u8* fmt, u32 v1, u32 v2) {
-	u8 buf[400];
-	
-	nsDbgPrint(fmt, v1, v2);
-	xsprintf(buf, fmt, v1, v2);
-	showMsg(buf);
+    
+    va_end(arp);
 }
 
 extern PLGLOADER_INFO *g_plgInfo;
@@ -272,7 +250,7 @@ void acquireVideo() {
 		*(vu32*)(IoBasePdc + 0x55c) = 0x014000f0;
 		*(vu32*)(IoBasePdc + 0x590) = 0x000002d0;
 
-		blank(0, 0, 320, 240);
+		clear(0, 0, 320, 240, WHITE);
 	}
 	videoRef ++;
 }
@@ -296,9 +274,7 @@ u32 getKey() {
 int confirmKey(int keyCode, int time) {
 	vu32 i;
 	for (i = 0; i < time; i++) {
-		if (getKey() != keyCode) {
-			return 0;
-		}
+		if (getKey() != keyCode) return 0;
 	}
 	return 1;
 }
@@ -307,31 +283,12 @@ u32 waitKey() {
 	u32 key;
 	while (1) {
 		key = getKey();
-		if (key == 0) {
-			if (confirmKey(0, 0x1000)) {
-				break;
-			}
-		}
+		if (key == 0 && confirmKey(0, 0x1000)) break;
 	}
 	while(1) {
 		key = getKey();
-		if (key != 0) {
-			if (confirmKey(key, 0x10000)) {
-				break;
-			}
-		}
+        if (key != 0 && confirmKey(key, 0x10000)) break;
 	}
 
 	return key;
-}
-
-
-void blinkColor(u32 c){
-	vu32 t;
-	*(vu32*)(IoBaseLcd + 0x204) = c;
-	for (t = 0; t < 100000; t++) {
-	}
-	*(vu32*)(IoBaseLcd + 0x204) = 0;
-	for (t = 0; t < 100000; t++) {
-	}
 }

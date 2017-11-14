@@ -32,8 +32,8 @@ u32 plgGetIoBase(u32 IoType);
 u32 plgSetValue(u32 index, u32 value);
 
 
-void showDbg(u8* fmt, u32 v1, u32 v2);
-void nsDbgPrint (const char*	fmt,	...	);
+void Log(const char* fmt, ...);
+void ntrDebugLog (const char*	fmt,	...	);
 
 u32 controlVideo(u32 cmd, u32 arg1, u32 arg2, u32 arg3);
 #define CONTROLVIDEO_ACQUIREVIDEO 1

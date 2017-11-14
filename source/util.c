@@ -1,6 +1,6 @@
 #include "global.h"
 
-void mystrcat(u8* a, u8* b){
+void mystrcat(char* a, char* b){
 	while(*a != 0) {
 		a++;
 	}
@@ -12,7 +12,7 @@ void mystrcat(u8* a, u8* b){
 	*a = 0;
 }
 
-void  myitoa(u32 a, u8* b){
+void  myitoa(u32 a, char* b){
 	u8 i = 0;
 	u8 t;
 	for (i = 0; i < 8; i++) {

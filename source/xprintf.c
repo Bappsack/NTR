@@ -193,6 +193,18 @@ void xsprintf (			/* Put a formatted string to the memory */
 	outptr = 0;			/* Switch destination for device */
 }
 
+void xsprintf_va (			/* Put a formatted string to the memory */
+	char* buff,			/* Pointer to the output buffer */
+	const char*	fmt,	/* Pointer to the format string */
+	va_list arp					/* Optional arguments */
+)
+{
+	outptr = buff;		/* Switch destination for memory */
+	xvprintf(fmt, arp);
+
+	*outptr = 0;		/* Terminate output string with a \0 */
+	outptr = 0;			/* Switch destination for device */
+}
 
 void xfprintf (					/* Put a formatted string to the specified device */
 	void(*func)(unsigned char),	/* Pointer to the output function */

@@ -1,12 +1,12 @@
 #define IS_PLUGIN 0
 
-#define NTR_CFW_VERSION "NTR 3.6"
+#define NTR_CFW_VERSION "NTR 3.61"
 #include "main.h"
 
 #include "memory.h"
 #include "2d.h"
 #include "math.h"
-#include "3dstypes.h"
+#include "types.h"
 #include "constants.h"
 #include "xprintf.h"
 #include <stdlib.h>

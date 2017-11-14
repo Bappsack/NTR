@@ -1,4 +1,3 @@
-
 OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
 OUTPUT_ARCH(arm)
 ENTRY(_Reset)
@@ -8,7 +7,7 @@ SECTIONS
 . = ALIGN(4);
 .text : {
 	__text_start = .;  	
-	bootloader.o (.text*)
+	start.o (.text*)
 	*(.text*)
 }
 . = ALIGN(4);

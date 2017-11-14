@@ -3,9 +3,10 @@
 
 
 void setCpuClockLock(int v);
-void lockCpuClock();
-void setExitFlag();
-void checkExitFlag();
+void lockCpuClock(void);
+void clearDisp(u32 rgb);
+void setExitFlag(void);
+void checkExitFlag(void);
 
 void dumpRemoteProcess(u32 pid, u8* fileName, u32 startAdd);
 void dumpCode(u32 base, u32 size, u8* fileName);
@@ -20,48 +21,73 @@ u32 mapRemoteMemoryInSysRegion(Handle hProcess, u32 addr, u32 size);
 u32 writeRemoteProcessMemory(int pid, u32 addr, u32 size, u32* buf);
 
 u32 getProcessTIDByHandle(u32 hProcess, u32 tid[]);
-u32 getCurrentProcessId();
-u32 getCurrentProcessHandle();
+u32 getCurrentProcessId(void);
+u32 getCurrentProcessHandle(void);
 
 
-void debounceKey();
-void updateScreen();
+void debounceKey(void);
+void updateScreen(void);
 s32 showMenu(u8* title, u32 entryCount, u8* captions[]);
 s32 showMenuEx(u8* title, u32 entryCount, u8* captions[], u8* descriptions[], u32 selectOn);
-int showMsg(u8* msg);
-int showMsgNoPause(u8* msg);
 void acquireVideo() ;
-void releaseVideo();
-u32 waitKey();
-u32 getKey();
-void blinkColor(u32 c);
-u32 initDirectScreenAccess();
-void delayUi();
-int drawString(u8* str, int x, int y, char r, char g, char b, int newLine);
+void releaseVideo(void);
+u32 waitKey(void);
+u32 getKey(void);
+u32 initDirectScreenAccess(void);
+void delayUi(void);
+int drawString(const char* str, int x, int y, u32 rgbTxt, u32 rgbBg, int newLine);
 void mdelay(u32 m);
+void print(const char* s, int x, int y, u32 rgbTxt);
 
+void ntrToolsMain(void);
+void do_screen_shoot(void);
 
-void mystrcat(u8* a, u8* b);
-void myitoa(u32 a, u8* b);
+void setThemeCol(u32 col);
+int builtinDrawString(const char* str, int x, int y, u32 rgbTxt, u32 rgbBg, int newLine);
+
+void mystrcat(char* a, char* b);
+void myitoa(u32 a, char* b);
 void dbg(u8* key, u32 value);
 
 void kernelCallback(u32 msr);
 void kmemcpy(void* dst, void* src, u32 size) ;
 void kSetCurrentKProcess(u32 ptr);
-u32 kGetCurrentKProcess();
+u32 kGetCurrentKProcess(void);
 u32 kGetKProcessByHandle(u32 handle);
 u32 kSwapProcessPid(u32 kProcess, u32 newPid) ;
-void kRemotePlayCallback();
+void kRemotePlayCallback(void);
 
-void initFromInjectPM();
-void initFromInjectGame();
-void plgInitFromInjectHOME();
+void initFromInjectPM(void);
+void initFromInjectGame(void);
+void plgInitFromInjectHOME(void);
 
-typedef int(*drawStringTypeDef)  (u8* str, int x, int y, char r, char g, char b, int newLine);
+
+void nsInitBreakPoint(int id, u32 addr, int type);
+void nsHandleQueryHandle(void);
+void nsHandleBreakPoint(void);
+void nsHandleReload(void);
+void nsHandleListProcess(void);
+void nsHandleMemLayout(void);
+void nsHandleWriteMem(void);
+void nsHandleReadMem(void);
+u32 nsGetPCToAttachProcess(u32 hProcess);
+void nsHandleListThread(void);
+void nsHandleAttachProcess(void);
+void nsPrintRegs(u32* regs);
+void nsUpdateDebugStatus(void);
+void nsHandlePacket(void);
+void nsMainLoop(void);
+void nsThreadStart(void);
+void nsInitDebug(void);
+void nsInit(void);
+
+void backdoorHandler(void);
+
+typedef int(*drawStringTypeDef)  (const char* str, int x, int y, u32 rgbTxt, u32 rgbBg, int newLine);
 typedef char* (*translateTypeDef) (char* str);
 char* plgTranslate(char* origText);
 
-int plgTryUpdateConfig();
+int plgTryUpdateConfig(void);
 u32 plgRequestTempBuffer(u32 size);
 
 extern Handle fsUserHandle;
@@ -95,9 +121,6 @@ typedef struct _GAME_PLUGIN_MENU {
 	u16 bufOffset, count;
 	u8 buf[3000];
 } GAME_PLUGIN_MENU;
-
-
-
 
 #define CURRENT_PROCESS_HANDLE	0xffff8001
 

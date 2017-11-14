@@ -1,8 +1,8 @@
 .arm
 .align(4);
 .section .text
-.global _Reset
 
+.global _Reset
 _Reset:
 b	_Start
 
@@ -22,8 +22,8 @@ STMFD	SP!, {R0-R12, LR};
 MRS     R0, CPSR
 STMFD	SP!, {R0}
 
-LDR		R6, =_Reset
-ADR		R5, _Reset
+LDR		r6, =_Reset
+ADR		r5, _Reset
 sub		r5, r5, r6		/* r5 = realAddress - baseAddress */
 ldr		r6, = __rel_dyn_start
 ldr		r7, = __rel_dyn_end
@@ -45,11 +45,8 @@ adr		r1, _Reset
 ldr		r2, =__rel_dyn_end
 sub		r2, r2, r1		/* r2 = codesize */
 svc		0x54			/* flush instruction cache */
-nop
-nop
-
 mov		r0, sp
-bl		main
+bl		ntrMain
 
 ldmfd	sp!, {r0}
 msr		cpsr, r0
@@ -58,13 +55,7 @@ ldmfd	SP!, {R0-R12, LR};
 .global _ReturnToUser
 _ReturnToUser:
 bx lr
-nop
-nop
-nop
 msr cpsr, r0
-/* unused
-ldr		PC, =c_entry
-*/
 
 .section .__rel_dyn_start
 __rel_dyn_start:

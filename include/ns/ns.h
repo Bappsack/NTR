@@ -1,5 +1,3 @@
-
-
 extern u32 nsDefaultMemRegion;
 
 #define NS_DEFAULT_MEM_REGION (nsDefaultMemRegion)

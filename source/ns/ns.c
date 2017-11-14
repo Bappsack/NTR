@@ -12,9 +12,7 @@
 NS_CONTEXT* g_nsCtx = 0;
 NS_CONFIG* g_nsConfig;
 
-
 u32 heapStart, heapEnd;
-
 
 void doSendDelay(u32 time) {
 	vu32 i;
@@ -24,7 +22,7 @@ void doSendDelay(u32 time) {
 }
 
 void tje_log(char* str) {
-	nsDbgPrint("tje: %s\n", str);
+	ntrDebugLog("tje: %s\n", str);
 }
 
 #define RP_MODE_TOP_BOT_10X 0
@@ -54,7 +52,7 @@ u64 rpMinIntervalBetweenPacketsInTick = 0;
 
 
 
-void*  rpMalloc( u32 size)
+void* rpMalloc( u32 size)
 
 {
 	void* ret = rpAllocBuff + rpAllocBuffOffset;
@@ -63,25 +61,25 @@ void*  rpMalloc( u32 size)
 		totalSize += 32 - (totalSize % 32);
 	}
 	if (rpAllocBuffRemainSize < totalSize) {
-		nsDbgPrint("bad alloc,  size: %d\n", size);
+		ntrDebugLog("bad alloc,  size: %d\n", size);
 		if (rpAllocDebug) {
-			showDbg("bad alloc,  size: %d\n", size, 0);
+			Log("bad alloc,  size: %d\n", size, 0);
 		}
 		return 0;
 	}
 	rpAllocBuffOffset += totalSize;
 	rpAllocBuffRemainSize -= totalSize;
 	memset(ret, 0, totalSize);
-	nsDbgPrint("alloc size: %d, ptr: %08x\n", size, ret);
+	ntrDebugLog("alloc size: %d, ptr: %08x\n", size, ret);
 	if (rpAllocDebug) {
-		showDbg("alloc size: %d, ptr: %08x\n", size, ret);
+		Log("alloc size: %d, ptr: %08x\n", size, ret);
 	}
 	return ret;
 }
 
 void  rpFree(void* ptr)
 {
-	nsDbgPrint("free: %08x\n", ptr);
+	ntrDebugLog("free: %08x\n", ptr);
 	return;
 }
 
@@ -95,7 +93,7 @@ void nsDbgPutc(char ch) {
 	g_nsConfig->debugPtr++;
 }
 
-void nsDbgPrint(			/* Put a formatted string to the default device */
+void ntrDebugLog(			/* Put a formatted string to the default device */
 	const char*	fmt,	/* Pointer to the format string */
 	...					/* Optional arguments */
 	)
@@ -124,7 +122,7 @@ int nsSendPacketHeader() {
 
 int nsSendPacketData(u8* buf, u32 size) {
 	if (g_nsCtx->remainDataLen < size) {
-		showDbg("send remain < size: %08x, %08x", g_nsCtx->remainDataLen, size);
+		Log("send remain < size: %08x, %08x", g_nsCtx->remainDataLen, size);
 		return -1;
 	}
 	g_nsCtx->remainDataLen -= size;
@@ -133,7 +131,7 @@ int nsSendPacketData(u8* buf, u32 size) {
 
 int nsRecvPacketData(u8* buf, u32 size) {
 	if (g_nsCtx->remainDataLen < size) {
-		showDbg("recv remain < size: %08x, %08x", g_nsCtx->remainDataLen, size);
+		Log("recv remain < size: %08x, %08x", g_nsCtx->remainDataLen, size);
 		return -1;
 	}
 	g_nsCtx->remainDataLen -= size;
@@ -142,45 +140,6 @@ int nsRecvPacketData(u8* buf, u32 size) {
 
 extern u8 *image_buf;
 void allocImageBuf();
-
-/*
-void remotePlayMain2() {
-int udp_sock = socket(AF_INET, SOCK_DGRAM, 0);
-struct sockaddr_in addr;
-int ret, i;
-
-if (udp_sock < 0) {
-nsDbgPrint("socket failed: %d", udp_sock);
-return;
-}
-addr.sin_family = AF_INET;
-addr.sin_port = rtIntToPortNumber(9001);
-addr.sin_addr.s_addr = 0x6602a8c0;  // __builtin_bswap32(0xc0a80266);
-
-nsDbgPrint("bind done 22");
-allocImageBuf();
-while (1) {
-ret = sendto(udp_sock, image_buf, 1300, 0, &addr, sizeof(addr));
-}
-
-final:
-closesocket(udp_sock);
-}
-
-
-u32 nwmSocPutFrameRaw(Handle handle, u8* frame, u32 size) {
-u32* cmdbuf = getThreadCommandBuffer();
-u32 ret;
-cmdbuf[0] = 0x10042;
-cmdbuf[1] = size;
-cmdbuf[2] = (((u32)size) << 14) | 2;
-cmdbuf[3] = frame;
-ret = svc_sendSyncRequest(handle);
-if (ret != 0) {
-return ret;
-}
-return cmdbuf[1];
-}*/
 
 RT_HOOK nwmValParamHook;
 
@@ -206,16 +165,16 @@ typedef u32(*sendPacketTypedef) (u8*, u32);
 sendPacketTypedef nwmSendPacket = 0;
 
 
-uint16_t ip_checksum(void* vdata, size_t length) {
+u16 ip_checksum(void* vdata, size_t length) {
 	// Cast the data pointer to one that can be indexed.
 	char* data = (char*)vdata;
 	size_t i;
 	// Initialise the accumulator.
-	uint32_t acc = 0xffff;
+	u32 acc = 0xffff;
 
 	// Handle complete 16-bit blocks.
 	for (i = 0; i + 1 < length; i += 2) {
-		uint16_t word;
+		u16 word;
 		memcpy(&word, data + i, 2);
 		acc += ntohs(word);
 		if (acc > 0xffff) {
@@ -225,7 +184,7 @@ uint16_t ip_checksum(void* vdata, size_t length) {
 
 	// Handle any partial block at the end of the data.
 	if (length & 1) {
-		uint16_t word = 0;
+		u16 word = 0;
 		memcpy(&word, data + length - 1, 1);
 		acc += ntohs(word);
 		if (acc > 0xffff) {
@@ -346,7 +305,7 @@ vu64 rpLastSendTick = 0;
 
 void rpSendBuffer(u8* buf, u32 size, u32 flag) {
 	if (rpAllocDebug) {
-		showDbg("sendbuf: %08x, %d", buf, size);
+		Log("sendbuf: %08x, %d", buf, size);
 		return;
 	}
 	vu64 tickDiff;
@@ -541,11 +500,7 @@ int remotePlayBlit(BLIT_CONTEXT* ctx) {
 	return dp - dataBuf;
 }
 
-
 void remotePlayKernelCallback() {
-
-
-
 	u32 ret;
 	u32 fbP2VOffset = 0xc0000000;
 	u32 current_fb;
@@ -559,7 +514,6 @@ void remotePlayKernelCallback() {
 	tl_pitch = REG(IoBasePdc + 0x490);
 	bl_pitch = REG(IoBasePdc + 0x590);
 
-
 	current_fb = REG(IoBasePdc + 0x478);
 	current_fb &= 1;
 	tl_current = tl_fbaddr[current_fb];
@@ -567,28 +521,7 @@ void remotePlayKernelCallback() {
 	current_fb = REG(IoBasePdc + 0x578);
 	current_fb &= 1;
 	bl_current = bl_fbaddr[current_fb];
-
-	/*
-	memcpy(imgBuffer, (void*)tl_current, tl_pitch * 400);
-
-	if (requireUpdateBottom) {
-		memcpy(imgBuffer + 0x00050000, (void*)bl_current, bl_pitch * 320);
-	}*/
-
-	// TOP screen
-	/*
-	current_fb = REG(IoBasePdc + 0x478);
-	current_fb &= 1;
-	topFormat = remotePlayBlit(imgBuffer, 400, 240, (void*)tl_fbaddr[current_fb], tl_format, tl_pitch);
-	*/
-	/*
-	// Bottom screen
-	current_fb = REG(IoBasePdc + 0x578);
-	current_fb &= 1;
-	bottomFormat = remotePlayBlit(imgBuffer + 0x50000, 320, 240, (void*)bl_fbaddr[current_fb], bl_format, bl_pitch);
-	*/
 }
-
 
 Handle rpHDma[2], rpHandleHome, rpHandleGame;
 u32 rpGameFCRAMBase = 0;
@@ -606,7 +539,7 @@ Handle rpGetGameHandle() {
 		for (i = 0x28; i < 0x38; i++) {
 			int ret = svc_openProcess(&hProcess, i);
 			if (ret == 0) {
-				nsDbgPrint("game process: %x\n", i);
+				ntrDebugLog("game process: %x\n", i);
 				rpHandleGame = hProcess;
 				break;
 			}
@@ -763,7 +696,7 @@ void remotePlayThreadStart() {
 	}
 	rpInitJpegCompress();
 
-	nsDbgPrint("imgBuffer: %08x\n", imgBuffer);
+	ntrDebugLog("imgBuffer: %08x\n", imgBuffer);
 	if (!imgBuffer) {
 		goto final;
 	}
@@ -785,9 +718,9 @@ int nwmValParamCallback(u8* buf, int buflen) {
 	Handle hThread;
 	/*
 	if (buf[31] != 6) {
-	nsDbgPrint("buflen: %d\n", buflen);
+	ntrDebugLog("buflen: %d\n", buflen);
 	for (i = 0; i < buflen; i++) {
-	nsDbgPrint("%02x ", buf[i]);
+	ntrDebugLog("%02x ", buf[i]);
 	}
 	}*/
 
@@ -802,7 +735,7 @@ int nwmValParamCallback(u8* buf, int buflen) {
 			threadStack = plgRequestMemory(stackSize);
 			ret = svc_createThread(&hThread, (void*)remotePlayThreadStart, 0, &threadStack[(stackSize / 4) - 10], 0x10, 2);
 			if (ret != 0) {
-				nsDbgPrint("Create RemotePlay Thread Failed: %08x\n", ret);
+				ntrDebugLog("Create RemotePlay Thread Failed: %08x\n", ret);
 			}
 		}
 	}
@@ -838,7 +771,7 @@ void testJpeg() {
 	cinfo.image_width = 240;
 	cinfo.image_height = 400;
 	cinfo.input_components = 3;
-	showDbg("start compress", 0, 0);
+	Log("start compress", 0, 0);
 	jpeg_start_compress(&cinfo, TRUE);
 
 }
@@ -850,7 +783,7 @@ void tickTest() {
 	u32 time1 = svc_getSystemTick();
 	svc_sleepThread(1000000000);
 	u32 time2 = svc_getSystemTick();
-	nsDbgPrint("%08x, %08x\n", time1, time2);
+	ntrDebugLog("%08x, %08x\n", time1, time2);
 }
 */
 
@@ -862,12 +795,12 @@ int nsHandleRemotePlay() {
 	u32 qosValue = pac->args[2];	
 	
 	if (!((quality >= 10) && (quality <= 100))) {
-		nsDbgPrint("illegal quality\n");
+		ntrDebugLog("illegal quality\n");
 		goto final;
 	}
 
 	if (nsIsRemotePlayStarted) {
-		nsDbgPrint("remote play already started\n");
+		ntrDebugLog("remote play already started\n");
 		goto final;
 	}
 	nsIsRemotePlayStarted = 1;
@@ -885,7 +818,7 @@ int nsHandleRemotePlay() {
 	cfg.startupInfo[10] = qosValue;
 	ret = svc_openProcess(&hProcess, pid);
 	if (ret != 0) {
-		nsDbgPrint("openProcess failed: %08x\n", ret, 0);
+		ntrDebugLog("openProcess failed: %08x\n", ret, 0);
 		hProcess = 0;
 		goto final;
 	}
@@ -894,7 +827,7 @@ int nsHandleRemotePlay() {
 	u8 desiredHeader[16] = { 0x04, 0x00, 0x2D, 0xE5, 0x4F, 0x00, 0x00, 0xEF, 0x00, 0x20, 0x9D, 0xE5, 0x00, 0x10, 0x82, 0xE5 };
 	u8 buf[16] = { 0 };
 	if (!(ntrConfig->isNew3DS)) {
-		nsDbgPrint("remoteplay is available on new3ds only\n");
+		ntrDebugLog("remoteplay is available on new3ds only\n");
 		goto final;
 	}
 
@@ -920,12 +853,12 @@ int nsHandleRemotePlay() {
 		}
 	}
 	if (!isFirmwareSupported) {
-		nsDbgPrint("remoteplay is not supported on current firmware\n");
+		ntrDebugLog("remoteplay is not supported on current firmware\n");
 		goto final;
 	}
 	setCpuClockLock(3);
-	nsDbgPrint("cpu was locked on 804MHz, L2 Enabled\n");
-	nsDbgPrint("starting remoteplay...\n");
+	ntrDebugLog("cpu was locked on 804MHz, L2 Enabled\n");
+	ntrDebugLog("starting remoteplay...\n");
 	nsAttachProcess(hProcess, remotePC, &cfg, 1);
 
 	final:
@@ -948,7 +881,7 @@ void nsHandleSaveFile() {
 	FS_path testPath = (FS_path){ PATH_CHAR, strlen(buf) + 1, buf };
 	ret = FSUSER_OpenFileDirectly(fsUserHandle, &hFile, sdmcArchive, testPath, 7, 0);
 	if (ret != 0) {
-		showDbg("openFile failed: %08x", ret, 0);
+		Log("openFile failed: %08x", ret, 0);
 		return;
 	}
 
@@ -964,7 +897,7 @@ void nsHandleSaveFile() {
 		off += t;
 	}
 	svc_closeHandle(hFile);
-	nsDbgPrint("saved to %s successfully\n", buf);
+	ntrDebugLog("saved to %s successfully\n", buf);
 }
 
 int nsFindFreeBreakPoint() {
@@ -979,27 +912,27 @@ int nsFindFreeBreakPoint() {
 void nsEnableBreakPoint(int id) {
 	NS_BREAKPOINT* bp = &(g_nsCtx->breakPoint[id]);
 	if (bp->isEnabled) {
-		nsDbgPrint("bp %d already enabled\n", id);
+		ntrDebugLog("bp %d already enabled\n", id);
 		return;
 	}
 	bp->isEnabled = 1;
 	if ((bp->type == NS_BPTYPE_CODE) || (bp->type == NS_BPTYPE_CODEONESHOT)) {
 		rtEnableHook(&bp->hook);
 	}
-	nsDbgPrint("bp %d enabled\n", id);
+	ntrDebugLog("bp %d enabled\n", id);
 }
 
 void nsDisableBreakPoint(int id) {
 	NS_BREAKPOINT* bp = &(g_nsCtx->breakPoint[id]);
 	if (!bp->isEnabled) {
-		nsDbgPrint("bp %d already disabled\n", id);
+		ntrDebugLog("bp %d already disabled\n", id);
 		return;
 	}
 	bp->isEnabled = 0;
 	if ((bp->type == NS_BPTYPE_CODE) || (bp->type == NS_BPTYPE_CODEONESHOT)) {
 		rtDisableHook(&bp->hook);
 	}
-	nsDbgPrint("bp %d disabled\n", id);
+	ntrDebugLog("bp %d disabled\n", id);
 }
 
 void nsBreakPointCallback(u32 regs, u32 bpid, u32 regs2) {
@@ -1062,7 +995,7 @@ u32 nsInitCodeBreakPoint(int id) {
 
 	ret = rtCheckRemoteMemoryRegionSafeForWrite(getCurrentProcessHandle(), bp->addr, 8);
 	if (ret != 0){
-		nsDbgPrint("rtCheckRemoteMemoryRegionSafeForWrite failed :%08x\n", ret);
+		ntrDebugLog("rtCheckRemoteMemoryRegionSafeForWrite failed :%08x\n", ret);
 		return ret;
 	}
 
@@ -1097,13 +1030,13 @@ void nsInitBreakPoint(int id, u32 addr, int type) {
 	if ((type == NS_BPTYPE_CODE) || (type == NS_BPTYPE_CODEONESHOT)) {
 		ret = nsInitCodeBreakPoint(id);
 		if (ret == 0) {
-			nsDbgPrint("code breakpoint, id: %d, addr: %08x\n", id, addr);
+			ntrDebugLog("code breakpoint, id: %d, addr: %08x\n", id, addr);
 			nsEnableBreakPoint(id);
 			return;
 		}
 	}
 	bp->type = NS_BPTYPE_UNUSED;
-	nsDbgPrint("init breakpoint failed.\n");
+	ntrDebugLog("init breakpoint failed.\n");
 }
 
 void nsHandleQueryHandle() {
@@ -1115,14 +1048,14 @@ void nsHandleQueryHandle() {
 
 	ret = svc_openProcess(&hProcess, pid);
 	if (ret != 0) {
-		nsDbgPrint("openprocess failed.\n");
+		ntrDebugLog("openprocess failed.\n");
 		return;
 	}
-	//showDbg("hprocess: %08x", hProcess, 0);
+	//Log("hprocess: %08x", hProcess, 0);
 	u32 pKProcess = kGetKProcessByHandle(hProcess);
 	u32 pHandleTable;
 	kmemcpy(&pHandleTable, pKProcess + KProcessHandleDataOffset, 4);
-	//showDbg("pHandleTable: %08x", pHandleTable, 0);
+	//Log("pHandleTable: %08x", pHandleTable, 0);
 	kmemcpy(buf, pHandleTable, sizeof(buf));
 	for (i = 0; i < 400; i += 2) {
 		u32 ptr = buf[i + 1];
@@ -1130,10 +1063,10 @@ void nsHandleQueryHandle() {
 			u32 handleHigh = *((u16*)&(buf[i]));
 			u32 handleLow = i / 2;
 			u32 handle = (handleHigh << 15) | handleLow;
-			nsDbgPrint("h: %08x, p: %08x\n", handle, ptr);
+			ntrDebugLog("h: %08x, p: %08x\n", handle, ptr);
 		}
 	}
-	nsDbgPrint("done");
+	ntrDebugLog("done");
 	svc_closeHandle(hProcess);
 }
 
@@ -1147,20 +1080,20 @@ void nsHandleBreakPoint() {
 
 	if (method == 1) { // add
 		id = nsFindFreeBreakPoint();
-		nsDbgPrint("freeid: %d\n", id);
+		ntrDebugLog("freeid: %d\n", id);
 		if (id == -1) {
 			return;
 		}
 		nsInitBreakPoint(id, addr, type);
 	}
 	if (method == 4) { // resume
-		nsDbgPrint("set resume flag");
+		ntrDebugLog("set resume flag");
 		g_nsCtx->breakPointStatus.resumeFlag = 1;
 		g_nsCtx->isBreakPointHandled = 0;
 	}
 
 	if (bpid >= MAX_BREAKPOINT) {
-		nsDbgPrint("invalid bpid\n");
+		ntrDebugLog("invalid bpid\n");
 		return;
 	}
 
@@ -1189,30 +1122,30 @@ void nsHandleReload() {
 	FS_path testPath = (FS_path){ PATH_CHAR, strlen(fileName) + 1, fileName };
 	ret = FSUSER_OpenFileDirectly(fsUserHandle, &hFile, sdmcArchive, testPath, 7, 0);
 	if (ret != 0) {
-		showDbg("openFile failed: %08x", ret, 0);
+		Log("openFile failed: %08x", ret, 0);
 		return;
 	}
 	ret = FSFILE_GetSize(hFile, &size64);
 	if (ret != 0) {
-		showDbg("FSFILE_GetSize failed: %08x", ret, 0);
+		Log("FSFILE_GetSize failed: %08x", ret, 0);
 		return;
 	}
 	size = size64;
 	size = rtAlignToPageSize(size);
 	ret = svc_controlMemory((u32*)&outAddr, 0, 0, size, 0x10003, 3);
 	if (ret != 0) {
-		showDbg("svc_controlMemory failed: %08x", ret, 0);
+		Log("svc_controlMemory failed: %08x", ret, 0);
 		return;
 	}
 
 	ret = FSFILE_Read(hFile, &tmp, 0, (u32*)outAddr, size);
 	if (ret != 0) {
-		showDbg("FSFILE_Read failed: %08x", ret, 0);
+		Log("FSFILE_Read failed: %08x", ret, 0);
 		return;
 	}
 	ret = protectMemory((u32*)outAddr, size);
 	if (ret != 0) {
-		showDbg("protectMemory failed: %08x", ret, 0);
+		Log("protectMemory failed: %08x", ret, 0);
 		return;
 	}
 	((funcType)outAddr)();
@@ -1229,18 +1162,18 @@ void nsHandleListProcess() {
 
 	ret = svc_getProcessList(&pidCount, pids, 100);
 	if (ret != 0) {
-		nsDbgPrint("getProcessList failed: %08x\n", ret);
+		ntrDebugLog("getProcessList failed: %08x\n", ret);
 		return;
 	}
 	for (i = 0; i < pidCount; i++) {
 
 		ret = getProcessInfo(pids[i], pname, tid, &kpobj);
 		if (ret != 0) {
-			nsDbgPrint("getProcessInfo failed: %08x\n", ret);
+			ntrDebugLog("getProcessInfo failed: %08x\n", ret);
 		}
-		nsDbgPrint("pid: 0x%08x, pname: %8s, tid: %08x%08x, kpobj: %08x\n", pids[i], pname, tid[1], tid[0], kpobj);
+		ntrDebugLog("pid: 0x%08x, pname: %8s, tid: %08x%08x, kpobj: %08x\n", pids[i], pname, tid[1], tid[0], kpobj);
 	}
-	nsDbgPrint("end of process list.\n");
+	ntrDebugLog("end of process list.\n");
 }
 void printMemLayout(Handle hProcess, u32 base, u32 limit) {
 	u32 ret, isValid = 0, isLastValid = 0;
@@ -1250,7 +1183,7 @@ void printMemLayout(Handle hProcess, u32 base, u32 limit) {
 		isValid = (ret == 0);
 		if (isValid != isLastValid) {
 			if (isLastValid) {
-				nsDbgPrint("%08x - %08x , size: %08x\n", lastAddr, base - 1, base - lastAddr);
+				ntrDebugLog("%08x - %08x , size: %08x\n", lastAddr, base - 1, base - lastAddr);
 			}
 
 			lastAddr = base;
@@ -1269,14 +1202,14 @@ void nsHandleMemLayout() {
 
 	ret = svc_openProcess(&hProcess, pid);
 	if (ret != 0) {
-		nsDbgPrint("openProcess failed: %08x\n", ret, 0);
+		ntrDebugLog("openProcess failed: %08x\n", ret, 0);
 		hProcess = 0;
 		goto final;
 	}
-	nsDbgPrint("valid memregions:\n");
+	ntrDebugLog("valid memregions:\n");
 	printMemLayout(hProcess, 0x00100000, 0x1F601000);
 	printMemLayout(hProcess, 0x30000000, 0x40000000);
-	nsDbgPrint("end of memlayout.\n");
+	ntrDebugLog("end of memlayout.\n");
 	final:
 	if (hProcess != 0) {
 		svc_closeHandle(hProcess);
@@ -1300,7 +1233,7 @@ void nsHandleWriteMem() {
 	else {
 		ret = svc_openProcess(&hProcess, pid);
 		if (ret != 0) {
-			nsDbgPrint("openProcess failed: %08x, pid: %08x\n", ret, pid);
+			ntrDebugLog("openProcess failed: %08x, pid: %08x\n", ret, pid);
 			hProcess = 0;
 			goto final;
 		}
@@ -1308,7 +1241,7 @@ void nsHandleWriteMem() {
 	if (addr < 0x20000000) {
 		ret = rtCheckRemoteMemoryRegionSafeForWrite(hProcess, addr, size);
 		if (ret != 0) {
-			nsDbgPrint("rtCheckRemoteMemoryRegionSafeForWrite failed: %08x\n", ret, 0);
+			ntrDebugLog("rtCheckRemoteMemoryRegionSafeForWrite failed: %08x\n", ret, 0);
 			goto final;
 		}
 	}
@@ -1331,13 +1264,13 @@ void nsHandleWriteMem() {
 		else {
 			ret = copyRemoteMemory(hProcess, (void*)addr, 0xffff8001, g_nsCtx->gBuff, tmpsize);
 			if (ret != 0) {
-				nsDbgPrint("copyRemoteMemory failed: %08x, addr: %08x\n", ret, addr);
+				ntrDebugLog("copyRemoteMemory failed: %08x, addr: %08x\n", ret, addr);
 			}
 		}
 		addr += tmpsize;
 		remain -= tmpsize;
 	}
-	nsDbgPrint("finished");
+	ntrDebugLog("finished");
 	final:
 	if (hProcess != 0) {
 		if (pid != -1) {
@@ -1362,7 +1295,7 @@ void nsHandleReadMem() {
 	else {
 		ret = svc_openProcess(&hProcess, pid);
 		if (ret != 0) {
-			nsDbgPrint("openProcess failed: %08x, pid: %08x\n", ret, pid);
+			ntrDebugLog("openProcess failed: %08x, pid: %08x\n", ret, pid);
 			hProcess = 0;
 			goto final;
 		}
@@ -1370,7 +1303,7 @@ void nsHandleReadMem() {
 	if (addr < 0x20000000) {
 		ret = rtCheckRemoteMemoryRegionSafeForWrite(hProcess, addr, size);
 		if (ret != 0) {
-			nsDbgPrint("rtCheckRemoteMemoryRegionSafeForWrite failed: %08x\n", ret, 0);
+			ntrDebugLog("rtCheckRemoteMemoryRegionSafeForWrite failed: %08x\n", ret, 0);
 			goto final;
 		}
 	}
@@ -1394,14 +1327,14 @@ void nsHandleReadMem() {
 		else {
 			ret = copyRemoteMemory(0xffff8001, g_nsCtx->gBuff, hProcess, (void*)addr, tmpsize);
 			if (ret != 0) {
-				nsDbgPrint("copyRemoteMemory failed: %08x, addr: %08x\n", ret, addr);
+				ntrDebugLog("copyRemoteMemory failed: %08x, addr: %08x\n", ret, addr);
 			}
 		}
 		nsSendPacketData(g_nsCtx->gBuff, tmpsize);
 		addr += tmpsize;
 		remain -= tmpsize;
 	}
-	nsDbgPrint("finished");
+	ntrDebugLog("finished");
 	final:
 	if (hProcess != 0) {
 		if (pid != -1) {
@@ -1425,7 +1358,7 @@ u32 nsGetPCToAttachProcess(u32 hProcess) {
 
 	ret = svc_getThreadList(&tidCount, tids, 100, hProcess);
 	if (ret != 0) {
-		nsDbgPrint("getThreadList failed: %08x\n", ret);
+		ntrDebugLog("getThreadList failed: %08x\n", ret);
 		return 0;
 	}
 	for (i = 0; i < tidCount; i++) {
@@ -1436,24 +1369,24 @@ u32 nsGetPCToAttachProcess(u32 hProcess) {
 		lr[i] = ctx[14];
 	}
 
-	nsDbgPrint("recommend pc:\n");
+	ntrDebugLog("recommend pc:\n");
 	for (i = 0; i < tidCount; i++) {
 		for (j = 0; j < tidCount; j++) {
 			if ((i != j) && (pc[i] == pc[j])) break;
 		}
 		if (j >= tidCount) {
-			nsDbgPrint("%08x\n", pc[i]);
+			ntrDebugLog("%08x\n", pc[i]);
 			if (!addr) addr = pc[i];
 		}
 	}
 
-	nsDbgPrint("recommend lr:\n");
+	ntrDebugLog("recommend lr:\n");
 	for (i = 0; i < tidCount; i++) {
 		for (j = 0; j < tidCount; j++) {
 			if ((i != j) && (lr[i] == lr[j])) break;
 		}
 		if (j >= tidCount) {
-			nsDbgPrint("%08x\n", lr[i]);
+			ntrDebugLog("%08x\n", lr[i]);
 			if (!addr) addr = lr[i];
 		}
 	}
@@ -1474,26 +1407,26 @@ void nsHandleListThread() {
 
 	ret = svc_openProcess(&hProcess, pid);
 	if (ret != 0) {
-		nsDbgPrint("openProcess failed: %08x\n", ret, 0);
+		ntrDebugLog("openProcess failed: %08x\n", ret, 0);
 		hProcess = 0;
 		goto final;
 	}
 	ret = svc_getThreadList(&tidCount, tids, 100, hProcess);
 	if (ret != 0) {
-		nsDbgPrint("getThreadList failed: %08x\n", ret);
+		ntrDebugLog("getThreadList failed: %08x\n", ret);
 		return;
 	}
 	for (i = 0; i < tidCount; i++) {
 		u32 tid = tids[i];
-		nsDbgPrint("tid: 0x%08x\n", tid);
+		ntrDebugLog("tid: 0x%08x\n", tid);
 		memset(ctx, 0x33, sizeof(ctx));
 		rtGetThreadReg(hProcess, tid, ctx);
-		nsDbgPrint("pc: %08x, lr: %08x\n", ctx[15], ctx[14]);
+		ntrDebugLog("pc: %08x, lr: %08x\n", ctx[15], ctx[14]);
 		for (j = 0; j < 32; j++) {
 
-			nsDbgPrint("%08x ", ctx[j]);
+			ntrDebugLog("%08x ", ctx[j]);
 		}
-		nsDbgPrint("\n");
+		ntrDebugLog("\n");
 		svc_closeHandle(hThread);
 
 	}
@@ -1520,11 +1453,11 @@ u32 nsAttachProcess(Handle hProcess, u32 remotePC, NS_CONFIG *cfg, int sysRegion
 	arm11StartAddress = baseAddr + 0x1000 + stackSize;
 	buf = (u32*)arm11BinStart;
 	size = arm11BinSize;
-	nsDbgPrint("buf: %08x, size: %08x\n", buf, size);
+	ntrDebugLog("buf: %08x, size: %08x\n", buf, size);
 
 
 	if (!buf) {
-		nsDbgPrint("arm11 not loaded\n");
+		ntrDebugLog("arm11 not loaded\n");
 		return;
 	}
 
@@ -1539,31 +1472,31 @@ u32 nsAttachProcess(Handle hProcess, u32 remotePC, NS_CONFIG *cfg, int sysRegion
 	}
 
 	if (ret != 0) {
-		nsDbgPrint("mapRemoteMemory failed: %08x\n", ret, 0);
+		ntrDebugLog("mapRemoteMemory failed: %08x\n", ret, 0);
 	}
 	// set rwx
 	ret = protectRemoteMemory(hProcess, (void*)baseAddr, totalSize);
 	if (ret != 0) {
-		nsDbgPrint("protectRemoteMemory failed: %08x\n", ret, 0);
+		ntrDebugLog("protectRemoteMemory failed: %08x\n", ret, 0);
 		goto final;
 	}
 	// load arm11.bin code at arm11StartAddress
 	ret = copyRemoteMemory(hProcess, (void*)arm11StartAddress, arm11BinProcess, buf, size);
 	if (ret != 0) {
-		nsDbgPrint("copyRemoteMemory(1) failed: %08x\n", ret, 0);
+		ntrDebugLog("copyRemoteMemory(1) failed: %08x\n", ret, 0);
 		goto final;
 	}
 
 	if (remotePC == 0) {
 		remotePC = nsGetPCToAttachProcess(hProcess);
 	}
-	nsDbgPrint("remotePC: %08x\n", remotePC, 0);
+	ntrDebugLog("remotePC: %08x\n", remotePC, 0);
 	if (remotePC == 0) {
 		goto final;
 	}
 	ret = rtCheckRemoteMemoryRegionSafeForWrite(hProcess, remotePC, 8);
 	if (ret != 0) {
-		nsDbgPrint("rtCheckRemoteMemoryRegionSafeForWrite failed: %08x\n", ret, 0);
+		ntrDebugLog("rtCheckRemoteMemoryRegionSafeForWrite failed: %08x\n", ret, 0);
 		goto final;
 	}
 
@@ -1574,7 +1507,7 @@ u32 nsAttachProcess(Handle hProcess, u32 remotePC, NS_CONFIG *cfg, int sysRegion
 	// store original 8-byte code
 	ret = copyRemoteMemory(0xffff8001, &(cfg->startupInfo[0]), hProcess, (void*)remotePC, 8);
 	if (ret != 0) {
-		nsDbgPrint("copyRemoteMemory(3) failed: %08x\n", ret, 0);
+		ntrDebugLog("copyRemoteMemory(3) failed: %08x\n", ret, 0);
 		goto final;
 	}
 	cfg->startupInfo[2] = remotePC;
@@ -1582,7 +1515,7 @@ u32 nsAttachProcess(Handle hProcess, u32 remotePC, NS_CONFIG *cfg, int sysRegion
 	// copy cfg structure to remote process
 	ret = copyRemoteMemory(hProcess, (void*)baseAddr, 0xffff8001, cfg, sizeof(NS_CONFIG));
 	if (ret != 0) {
-		nsDbgPrint("copyRemoteMemory(2) failed: %08x\n", ret, 0);
+		ntrDebugLog("copyRemoteMemory(2) failed: %08x\n", ret, 0);
 		goto final;
 	}
 
@@ -1591,7 +1524,7 @@ u32 nsAttachProcess(Handle hProcess, u32 remotePC, NS_CONFIG *cfg, int sysRegion
 	tmp[1] = arm11StartAddress;
 	ret = copyRemoteMemory(hProcess, (void*)remotePC, 0xffff8001, &tmp, 8);
 	if (ret != 0) {
-		nsDbgPrint("copyRemoteMemory(4) failed: %08x\n", ret, 0);
+		ntrDebugLog("copyRemoteMemory(4) failed: %08x\n", ret, 0);
 		goto final;
 	}
 
@@ -1616,12 +1549,12 @@ void nsHandleAttachProcess() {
 	}
 	ret = svc_openProcess(&hProcess, pid);
 	if (ret != 0) {
-		nsDbgPrint("openProcess failed: %08x\n", ret, 0);
+		ntrDebugLog("openProcess failed: %08x\n", ret, 0);
 		hProcess = 0;
 		goto final;
 	}
 	nsAttachProcess(hProcess, remotePC, &cfg, 0);
-	nsDbgPrint("will listen at port %d \n", pid + 5000);
+	ntrDebugLog("will listen at port %d \n", pid + 5000);
 	final:
 	if (hProcess != 0) {
 		svc_closeHandle(hProcess);
@@ -1632,12 +1565,12 @@ void nsHandleAttachProcess() {
 void nsPrintRegs(u32* regs) {
 	u32 i;
 
-	nsDbgPrint("cpsr:%08x ", regs[0]);
-	nsDbgPrint("lr:%08x sp:%08x\n", regs[14], (u32)(regs)+14 * 4);
+	ntrDebugLog("cpsr:%08x ", regs[0]);
+	ntrDebugLog("lr:%08x sp:%08x\n", regs[14], (u32)(regs)+14 * 4);
 	for (i = 0; i <= 12; i++) {
-		nsDbgPrint("r%d:%08x ", i, regs[1 + i]);
+		ntrDebugLog("r%d:%08x ", i, regs[1 + i]);
 	}
-	nsDbgPrint("\n");
+	ntrDebugLog("\n");
 }
 
 void nsUpdateDebugStatus() {
@@ -1653,7 +1586,7 @@ void nsUpdateDebugStatus() {
 	}
 
 	if ((isActived) && (!g_nsCtx->isBreakPointHandled)) {
-		nsDbgPrint("breakpoint %d hit\n", bpStatus.bpid);
+		ntrDebugLog("breakpoint %d hit\n", bpStatus.bpid);
 		nsPrintRegs((u32*)bpStatus.regs);
 	}
 	g_nsCtx->isBreakPointHandled = isActived;
@@ -1663,8 +1596,8 @@ void nsHandlePacket() {
 	NS_PACKET* pac = &(g_nsCtx->packetBuf);
 	g_nsCtx->remainDataLen = pac->dataLen;
 	if (pac->cmd == NS_CMD_SAYHELLO) {
-		disp(100, 0x100ff00);
-		nsDbgPrint("hello");
+		clearDisp(GREEN);
+		ntrDebugLog("hello");
 		return;
 	}
 
@@ -1760,12 +1693,12 @@ void nsMainLoop() {
 
 	ret = bind(listen_sock, (struct sockaddr *)&addr, sizeof(addr));
 	if (ret < 0) {
-		showDbg("bind failed: %08x", ret, 0);
+		Log("bind failed: %08x", ret, 0);
 		return;
 	}
 	ret = listen(listen_sock, 1);
 	if (ret < 0) {
-		showDbg("listen failed: %08x", ret, 0);
+		Log("listen failed: %08x", ret, 0);
 		return;
 	}
 
@@ -1784,12 +1717,12 @@ void nsMainLoop() {
 		while (1) {
 			ret = rtRecvSocket(sockfd, (u8*)&(g_nsCtx->packetBuf), sizeof(NS_PACKET));
 			if (ret != sizeof(NS_PACKET)) {
-				nsDbgPrint("rtRecvSocket failed: %08x", ret, 0);
+				ntrDebugLog("rtRecvSocket failed: %08x", ret, 0);
 				break;
 			}
 			NS_PACKET* pac = &(g_nsCtx->packetBuf);
 			if (pac->magic != 0x12345678) {
-				nsDbgPrint("broken protocol: %08x, %08x", pac->magic, pac->seq);
+				ntrDebugLog("broken protocol: %08x, %08x", pac->magic, pac->seq);
 				break;
 			}
 			nsUpdateDebugStatus();
@@ -1815,7 +1748,7 @@ void nsInitDebug() {
 	g_nsConfig->debugReady = 1;
 }
 
-void nsInit(u32 initType) {
+void nsInit() {
 	u32 socuSharedBufferSize;
 	u32 bufferSize;
 	u32 ret, outAddr;
@@ -1836,13 +1769,13 @@ void nsInit(u32 initType) {
 			ret = svc_controlMemory(&outAddr, base, 0, bufferSize, NS_DEFAULT_MEM_REGION + 3, 3);
 		}
 		if (ret != 0) {
-			showDbg("svc_controlMemory failed: %08x", ret, 0);
+			Log("svc_controlMemory failed: %08x", ret, 0);
 			return;
 		}
 	}
 	ret = rtCheckRemoteMemoryRegionSafeForWrite(getCurrentProcessHandle(), base, bufferSize);
 	if (ret != 0) {
-		showDbg("rtCheckRemoteMemoryRegionSafeForWrite failed: %08x", ret, 0);
+		Log("rtCheckRemoteMemoryRegionSafeForWrite failed: %08x", ret, 0);
 	}
 
 	if (!srvHandle) {
@@ -1851,7 +1784,7 @@ void nsInit(u32 initType) {
 	if (g_nsConfig->hSOCU == 0) {
 		ret = SOC_Initialize((u32*)outAddr, socuSharedBufferSize);
 		if (ret != 0) {
-			showDbg("SOC_Initialize failed: %08x", ret, 0);
+			Log("SOC_Initialize failed: %08x", ret, 0);
 			return;
 		}
 		g_nsConfig->hSOCU = SOCU_handle;
@@ -1891,8 +1824,7 @@ void nsInit(u32 initType) {
 	u32 affinity = 0x10;
 	ret = svc_createThread(&handle, (void*)nsThreadStart, 0, &threadStack[(STACK_SIZE / 4) - 10], affinity, 0xFFFFFFFE);
 	if (ret != 0) {
-		showDbg("svc_createThread failed: %08x", ret, 0);
+		Log("svc_createThread failed: %08x", ret, 0);
 		return;
 	}
-
 }

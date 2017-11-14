@@ -1,4 +1,3 @@
-
 #include "global.h"
 
 #define O_RDONLY 1
@@ -6,72 +5,9 @@
 #define O_RDWR   3
 #define O_CREAT  4
 
-
-
 u8 *image_buf = NULL;
 
-
-
-
-
-int sdf_open(char *filename, int mode)
-{
-	FS_archive sdmcArchive = { 0x9, (FS_path){ PATH_EMPTY, 1, (u8*)"" } };
-
-	Handle hd;
-	Result retv;
-	FS_path filePath;
-
-	filePath.type = PATH_CHAR;
-	filePath.size = strlen(filename) + 1;
-	filePath.data = (u8*)filename;
-
-	retv = FSUSER_OpenFileDirectly(fsUserHandle, &hd, sdmcArchive, filePath, mode, 0);
-	if (retv < 0){
-		return retv;
-	}
-
-	return hd;
-}
-
-int sdf_read(int fd, int offset, void *buf, int size)
-{
-	int read_size;
-	Result retv;
-
-	retv = FSFILE_Read(fd, (u32*)&read_size, offset, (u32*)buf, size);
-	if (retv < 0)
-		return retv;
-
-	return read_size;
-}
-
-int sdf_write(int fd, int offset, void *buf, int size)
-{
-	int write_size;
-	Result retv;
-
-	retv = FSFILE_Write(fd, (u32*)&write_size, offset, (u32*)buf, size, 0);
-	if (retv < 0)
-		return retv;
-
-	return write_size;
-}
-
-int sdf_close(int fd)
-{
-	Result retv;
-
-	retv = FSFILE_Close(fd);
-
-	return retv;
-}
-
-/**************************************************************/
-
-
-struct BitmapHeader
-{
+struct BitmapHeader{
 	char id[2];
 	u32  filesize;
 	u32  reserved;
@@ -89,7 +25,6 @@ struct BitmapHeader
 	u32  impcolors;
 } __attribute__((packed));
 
-
 void put_le32(void *dst, u32 val)
 {
 	u8 *dp = (u8*)dst;
@@ -100,17 +35,14 @@ void put_le32(void *dst, u32 val)
 	dp[3] = (val >> 24) & 0xff;
 }
 
-void put_le16(void *dst, u32 val)
-{
+void put_le16(void *dst, u32 val){
 	u8 *dp = (u8*)dst;
 
 	dp[0] = val & 0xff;
 	dp[1] = (val >> 8) & 0xff;
 }
 
-
-void bmp_write(u8 *bmp_buf, int width, int height, char *name)
-{
+void bmp_write(u8 *bmp_buf, int width, int height, char *name){
 	struct BitmapHeader *bmp;
 	int fd, fsize, hsize;
 
@@ -140,9 +72,7 @@ void bmp_write(u8 *bmp_buf, int width, int height, char *name)
 	}
 }
 
-
-void rev_image(u8 *dst, int width, int height, u8 *src, int src_pitch, int format)
-{
+void rev_image(u8 *dst, int width, int height, u8 *src, int src_pitch, int format){
 	int x, y, bpp;
 	u8 *dp, *sp;
 	u32 px;
@@ -196,22 +126,15 @@ void rev_image(u8 *dst, int width, int height, u8 *src, int src_pitch, int forma
 	}
 }
 
-
-int bmp_index;
-
-int get_file_index(void)
-{
+int get_file_index(void){
 	int fd;
 	char name[64];
-	int id;
-
-	id = 0;
+	int id = 0;
+    
 	while (1){
 		xsprintf(name, "/top_%04d.bmp", id);
 		fd = sdf_open(name, O_RDWR);
-		if (fd <= 0){
-			break;
-		}
+		if (fd <= 0) break;
 		sdf_close(fd);
 		id += 1;
 	}
@@ -219,19 +142,14 @@ int get_file_index(void)
 	return id;
 }
 
-
 void allocImageBuf() {
-	if (image_buf) {
-		return;
-	}
+	if (image_buf) return;
 	u32 out_addr = plgRequestMemory(0x00100000);
-	nsDbgPrint("    out_addr: %08x", out_addr);
+	ntrDebugLog("    out_addr: %08x", out_addr);
 	image_buf = (u8*)out_addr;
 }
 
-
-void do_screen_shoot(void)
-{
+void do_screen_shoot(){
 	u32 tl_fbaddr[2];
 	u32 bl_fbaddr[2];
 	u32 current_fb;
@@ -240,28 +158,21 @@ void do_screen_shoot(void)
 	u8 *rev_buf;
 	u32 fbP2VOffset = 0xc0000000;
 	u32 out_addr;
+    u32 bmp_index = get_file_index();
 
 	u32 workingBuffer;
 
 	char name[64];
 
 	if (ntrConfig->memMode == NTR_MEMMODE_DEFAULT) {
-		if (!image_buf) {
-			allocImageBuf();
-		}
-		if (image_buf == NULL) {
-			return;
-		}
+		if (!image_buf) allocImageBuf();
+		if (image_buf == NULL) return;
 		workingBuffer = image_buf;
-	}
-	else {
+	} else {
 		workingBuffer = plgRequestTempBuffer(0xA0000);
 	}
 
-	if (workingBuffer == 0) {
-		return;
-	}
-
+	if (workingBuffer == 0) return;
 
 	tl_fbaddr[0] = REG(IoBasePdc + 0x468) + fbP2VOffset;
 	tl_fbaddr[1] = REG(IoBasePdc + 0x46c) + fbP2VOffset;
@@ -292,17 +203,14 @@ void do_screen_shoot(void)
 	rev_image(rev_buf, 320, 240, workingBuffer + 0x50000, bl_pitch, bl_format);
 	xsprintf(name, "/bot_%04d.bmp", bmp_index);
 	bmp_write(workingBuffer, 320, 240, name);
-	disp(100, 0x01ff00ff);
-
-	bmp_index += 1;
+    
+	clearDisp(MAGENTA);
 }
 
-u32 takeScreenShot() {
+u32 takeScreenShot(){
 	vu32 i;
 	u32 ret, out_addr;
 
-	for (i = 0; i < 0x1000000; i++) {
-	}
 	controlVideo(CONTROLVIDEO_RELEASEVIDEO, 0, 0, 0);
 	svc_sleepThread(100000000);
 	do_screen_shoot();
@@ -310,299 +218,34 @@ u32 takeScreenShot() {
 	return 1;
 }
 
-u32 getRegionSize(Handle hProcess, u32 addr) {
-	u32 size = 0, ret;
-	while (1) {
-		ret = rtCheckRemoteMemoryRegionSafeForWrite(hProcess, addr + size, 0x1000);
-		if (ret != 0) {
-			break;
-		}
-		size += 0x1000;
-	}
-	return size;
-}
+/*
+*   Menu functions
+*/
+extern PLGLOADER_INFO *g_plgInfo;
 
-u32 fastCopyMemory(Handle hDst, u32 ptrDst, Handle hSrc, u32 ptrSrc, u32 size) {
-	u32 ret = 0;
-	ret = copyRemoteMemory(hDst, ptrDst, hSrc, ptrSrc, size);
-	if (ret == 0) {
-		return 0;
-	}
-	u32 off = 0;
-	for (off = 0; off < size; off += 0x1000) {
-		ret = copyRemoteMemory(hDst, ptrDst + off, hSrc, ptrSrc + off, 0x1000);
-		if (ret != 0) {
-			return ret;
-		}
-	}
-	return 0;
-}
-
-#define VRAM_ADDR (0x1F000000)
-#define VRAM_SIZE (0x00600000)
-u32 loadSaveVRAM(int fd, int isLoad) {
-	u32 off;
-	int ret;
-	svc_flushProcessDataCache(CURRENT_PROCESS_HANDLE, VRAM_ADDR, VRAM_SIZE);
-	svc_invalidateProcessDataCache(CURRENT_PROCESS_HANDLE, VRAM_ADDR, VRAM_SIZE);
-	for (off = 0; off < 0x00600000; off += 0x00100000) {
-		if (isLoad) {
-			ret = sdf_read(fd, off, image_buf, 0x00100000);
-			if (ret >= 0) {
-				memcpy(VRAM_ADDR + off, image_buf, 0x00100000);
-			}
-		}
-		else {
-			memcpy(image_buf, VRAM_ADDR + off, 0x00100000);
-			ret = sdf_write(fd, off, image_buf, 0x00100000);
-		}
-		if (ret < 0) {
-			return ret;
-		}
-	}
-	svc_invalidateProcessDataCache(CURRENT_PROCESS_HANDLE, VRAM_ADDR, VRAM_SIZE);
-	svc_flushProcessDataCache(CURRENT_PROCESS_HANDLE, VRAM_ADDR, VRAM_SIZE);
-	return 0;
-}
-
-
-u32 saveRegion(Handle hProcess, u32 addr, int fd, u32 offsetInFile, u32 size) {
-	u32 off = 0;
-	u32 currentRead;
-	u32 ret;
-	while (off < size) {
-		currentRead = size - off;
-		if (currentRead > 0x00100000) {
-			currentRead = 0x00100000;
-		}
-		ret = fastCopyMemory(CURRENT_PROCESS_HANDLE, image_buf, hProcess, addr + off, currentRead);
-		if (ret != 0) {
-			return ret;
-		}
-		sdf_write(fd, off + offsetInFile, image_buf, currentRead);
-		off += currentRead;
-	}
-	return 0;
-}
-
-u32 loadRegion(Handle hProcess, u32 addr, int fd, u32 offsetInFile, u32 size) {
-	u32 off = 0;
-	u32 currentRead, ret;
-
-	while (off < size) {
-		currentRead = size - off;
-		if (currentRead > 0x00100000) {
-			currentRead = 0x00100000;
-		}
-		sdf_read(fd, off + offsetInFile, image_buf, currentRead);
-		ret = fastCopyMemory(hProcess, addr + off, CURRENT_PROCESS_HANDLE, image_buf, currentRead);
-		if (ret != 0) {
-			return ret;
-		}
-		off += currentRead;
-	}
-	return 0;
-}
-
-u32 saveAddrMap[] = {
-	0x00100000, 0x08000000, 0x14000000, 0x30000000
-};
-
-extern PLGLOADER_INFO *g_plgInfo;;
-u32 instantSave(int id, int isLoad) {
-	delayUi();
-	u32 gamePid = g_plgInfo->gamePluginPid;
-	if (gamePid == 0) {
-		showDbg("game not running", 0, 0);
-		return 0;
-	}
-	Handle hProcess = 0, hGSPProcess = 0;
-	u32 ret;
-	int fd = 0;
-	ret = svc_openProcess(&hProcess, gamePid);
-	if (ret != 0) {
-		showDbg("open Game Process failed: %08x", ret, 0);
-		return 0;
-	}
-	ret = svc_openProcess(&hGSPProcess, 0x14);
-	if (ret != 0) {
-		showDbg("open GSP Process failed: %08x", ret, 0);
-		goto final;
-	}
-
-	u8 buf[40];
-	xsprintf(buf, "/save_%08x_%d.rts", g_plgInfo->tid[0], id);
-	fd = sdf_open(buf, isLoad ? O_RDWR : (O_RDWR | O_CREAT));
-	if (fd <= 0) {
-		showDbg("open file failed: %08x", fd, 0);
-		goto final;
-	}
-
-	u32 addrIdx, regionSize, offsetInFile = 0, addr;
-	ret = loadSaveVRAM(fd, isLoad);
-	if (ret != 0) {
-		showDbg("VRAM failed: %08x", ret, 0);
-		goto final;
-	}
-	offsetInFile += VRAM_SIZE;
-
-	addr = 0x08000000;
-	if (isLoad) {
-		ret = loadRegion(hGSPProcess, addr, fd, offsetInFile, VRAM_SIZE);
-	}
-	else {
-		ret = saveRegion(hGSPProcess, addr, fd, offsetInFile, VRAM_SIZE);
-	}
-	if (ret != 0) {
-		showDbg("GSP VRAM failed: %08x", ret, 0);
-		goto final;
-	}
-	offsetInFile += VRAM_SIZE;
-
-	for (addrIdx = 0; addrIdx < 3; addrIdx++) {
-		addr = saveAddrMap[addrIdx];
-		regionSize = getRegionSize(hProcess, addr);
-		if (regionSize > 0) {
-			if (isLoad) {
-				ret = loadRegion(hProcess, addr, fd, offsetInFile, regionSize);
-			}
-			else {
-				ret = saveRegion(hProcess, addr, fd, offsetInFile, regionSize);
-			}
-			if (ret != 0) {
-				showDbg("region %08x failed: %08x", addr, ret);
-				goto final;
-			}
-		}
-		offsetInFile += regionSize;
-	}
-	showDbg(isLoad ? "Load %d OK, GamePID: %08x." : "Save %d OK, GamePID: %08x.", id, gamePid);
-	final:
-	if (fd > 0) {
-		sdf_close(fd);
-	}
-	svc_closeHandle(hProcess);
-	svc_closeHandle(hGSPProcess);
-	return 0;
-}
-
-
-
-u32 instantSaveMenu() {
-	if (ntrConfig->memMode != NTR_MEMMODE_DEFAULT) {
-		showMsg("RTS is not compatitable with extended memory mode.");
-		return;
-	}
-	if (!image_buf) {
-		allocImageBuf();
-	}
-	if (image_buf == NULL){
-		return;
-	}
-
-	u8* entries[7];
-	u8 buf[5][20];
-
-	u32 r;
-	int i;
-	for (i = 0; i < 3; i++) {
-		xsprintf(buf[i], plgTranslate("Save %d"), i);
-		xsprintf(buf[i + 3], plgTranslate("Load %d"), i);
-		entries[i] = buf[i];
-		entries[i + 3] = buf[i + 3];
-	}
-	entries[6] = plgTranslate("Hint: Back to Home Menu before Load/Save.");
-	while (1){
-		r = showMenu(plgTranslate("Instant Save"), 7, entries);
-		if (r == -1) {
-			break;
-		}
-		if ((r >= 0) && (r <= 2)) {
-			instantSave(r, 0);
-			break;
-		}
-		if ((r >= 3) && (r <= 5)) {
-			instantSave(r - 3, 1);
-			break;
-		}
-	}
-
-	return 1;
-}
-
-
-
-u32 cpuClockUi() {
+u32 cpuClockUi(){
 	u8 buf[200];
 	acquireVideo();
 	u8* entries[8];
-	u32 r;
+	u32 res;
 	entries[0] = plgTranslate("268MHz, L2 Disabled (Default)");
 	entries[1] = plgTranslate("804MHz, L2 Disabled");
 	entries[2] = plgTranslate("268MHz, L2 Enabled");
 	entries[3] = plgTranslate("804MHz, L2 Enabled (Best)");
 	while (1) {
-		blank(0, 0, 320, 240);
-		r = showMenu(plgTranslate("CPU Clock"), 4, entries);
-		if (r == -1) {
-			break;
-		}
-		if ((r >= 0) && (r <= 3)) {
-			u32 ret = svc_kernelSetState(10, r, 0, 0);
-			if (ret != 0) {
-				showDbg("kernelSetState failed: %08x", ret, 0);
-			}
-			setCpuClockLock(r);
+		clear(0, 0, 320, 240, WHITE);
+		res = showMenu(plgTranslate("CPU Clock"), 4, entries);
+		if (res == -1) break;
+		if ((res >= 0) && (res <= 3)) {
+			u32 ret = svc_kernelSetState(10, res, 0, 0);
+			if (ret != 0) Log("kernelSetState failed: %08x", ret, 0);
+			setCpuClockLock(res);
 			break;
 		}
 	}
 	releaseVideo();
 	return 0;
 }
-
-
-void plgDoReboot() {
-	Handle hNSS = 0;
-	u32 ret;
-	ret = srv_getServiceHandle(NULL, &hNSS, "ns:s");
-	if (ret != 0) {
-		showDbg("open ns:s failed: %08x", ret, 0);
-		return;
-	}
-	u32* cmdbuf = getThreadCommandBuffer();
-	cmdbuf[0] = 0x00100180;
-	cmdbuf[1] = 0x00000000;
-	cmdbuf[2] = 0x00000000;
-	cmdbuf[3] = 0x00000000;
-	cmdbuf[4] = 0x00000000;
-	cmdbuf[5] = 0x00000000;
-	cmdbuf[6] = 0x00000000;
-	svc_sendSyncRequest(hNSS);
-	svc_closeHandle(hNSS);
-
-}
-
-void plgDoPowerOff() {
-	Handle hNSS = 0;
-	u32 ret;
-	ret = srv_getServiceHandle(NULL, &hNSS, "ns:s");
-	if (ret != 0) {
-		showDbg("open ns:s failed: %08x", ret, 0);
-		return;
-	}
-	u32* cmdbuf = getThreadCommandBuffer();
-	cmdbuf[0] = 0x000E0000;
-	cmdbuf[1] = 0x00000000;
-	cmdbuf[2] = 0x00000000;
-	cmdbuf[3] = 0x00000000;
-	cmdbuf[4] = 0x00000000;
-	cmdbuf[5] = 0x00000000;
-	cmdbuf[6] = 0x00000000;
-	svc_sendSyncRequest(hNSS);
-	svc_closeHandle(hNSS);
-
-}
-
 
 u32 powerMenu() {
 	acquireVideo();
@@ -613,18 +256,12 @@ u32 powerMenu() {
 	entries[1] = plgTranslate("Power Off");
 	while (1) {
 		r = showMenu(plgTranslate("Power"), 2, entries);
-		if (r == -1) {
-			break;
-		}
+		if (r == -1) break;
 		if (r == 0) {
-			for (i = 0; i < 0x05000000; i++) {
-			}
 			plgDoReboot();
 			break;
 		}
 		if (r == 1) {
-			for (i = 0; i < 0x05000000; i++) {
-			}
 			plgDoPowerOff();
 			break;
 		}
@@ -640,7 +277,6 @@ int bklightValue = 50;
 
 int checkBacklightSupported() {
 
-	
 	Handle hGSPProcess = 0;
 	u32 ret;
 	u8 buf[16] = { 0 };
@@ -720,8 +356,6 @@ void updateBklight() {
 
 	*(vu32*)(IoBaseLcd + 0x240) = t;
 	*(vu32*)(IoBaseLcd + 0xa40) = t;
-
-
 }
 
 void adjustBklight(int adj) {
@@ -741,10 +375,10 @@ u32 backlightMenu() {
 	}
 	u8 buf[50];
 	while (1) {
-		blank(0, 0, 320, 240);
+		clear(0, 0, 320, 240, WHITE);
 		xsprintf(buf, "backlight: %d", bklightValue);
-		print(buf, 10, 10, 255, 0, 0);
-		print(plgTranslate("Press Up/Down/Left/Right to adjust."), 10, 220, 0, 0, 255);
+		print(buf, 10, 10, RED);
+		print(plgTranslate("Press Up/Down/Left/Right to adjust."), 10, 220, BLUE);
 		updateScreen();
 		u32 key = waitKey();
 		if (key == BUTTON_DU) {
@@ -768,8 +402,6 @@ u32 backlightMenu() {
 
 u32 nightShiftUi() {
 	int configUpdated = 0;
-	u8 buf[200];
-	acquireVideo();
 	u8* entries[11];
 	u32 r;
 	entries[0] = plgTranslate("Disabled");
@@ -781,13 +413,12 @@ u32 nightShiftUi() {
 	entries[6] = plgTranslate("Invert Colors");
 	entries[7] = plgTranslate("Grayscale");
 	entries[8] = plgTranslate("Hint: Must be enabled before starting game. Will set CPU to L2+804MHz on New3DS.");
+    
+    acquireVideo();
 	while (1) {
-		blank(0, 0, 320, 240);
+		clear(0, 0, 320, 240, WHITE);
 		r = showMenu(plgTranslate("Screen Filter"), 8, entries);
-		if (r == -1) {
-			break;
-
-		}
+		if (r == -1) break;
 		if ((r >= 0) && (r <= 7)) {
 			g_plgInfo->nightShiftLevel = r;
 			if (r > 0) {
@@ -800,36 +431,138 @@ u32 nightShiftUi() {
 		}
 	}
 	releaseVideo();
+    
 	if (configUpdated) {
 		plgTryUpdateConfig();
 	}
 	return 1;
 }
-int screenshotMain() {
-	u32 retv;
 
-
-	nsDbgPrint("initializing screenshot plugin\n");
-	plgRegisterMenuEntry(1, plgTranslate("Take Screenshot"), takeScreenShot);
-	plgRegisterMenuEntry(1, plgTranslate("Real-Time Save (Experimental)"), instantSaveMenu);
-
-	nsDbgPrint("fsUserHandle: %08x\n", fsUserHandle);
-	bmp_index = get_file_index();
-	nsDbgPrint("bmp index is: %d", bmp_index);
-
-	if (ntrConfig->isNew3DS) {
-		plgRegisterMenuEntry(1, plgTranslate("CPU Clock (New3DS Only)"), cpuClockUi);
+u32 themesMenu(){
+    u32 r;
+    u8* entries[3];
+	entries[0] = plgTranslate("Red");
+	entries[1] = plgTranslate("Mist");
+	entries[2] = plgTranslate("Classic");
+	entries[3] = plgTranslate("Default");
+    
+    acquireVideo();
+    while (1) {
+		clear(0, 0, 320, 240, WHITE);
+		r = showMenu(plgTranslate("Themes"), 4, entries);
+		if (r == -1) break;
+		if (r == 0) {setTheme(RED, WHITE, BLACK); break;}
+		if (r == 1) {setTheme(0x8080, 0xD0EAF0, 0x40E0D0); break;}
+        if (r == 2) {setTheme(WHITE, BLACK, RED); break;}
+        if (r == 3) {setTheme(DARKGREY, GREEN, 0xEE9629); break;}
 	}
-	plgRegisterMenuEntry(1, plgTranslate("Power"), powerMenu);
-	if (checkBacklightSupported()){
-		plgRegisterMenuEntry(1, plgTranslate("Backlight"), backlightMenu);
-	}
+	releaseVideo();
 
-	plgRegisterMenuEntry(1, plgTranslate("Screen Filter"), nightShiftUi);
-
+	return 1;
 }
 
+void ntrToolsMain() {
+	u32 retv;
 
+	ntrDebugLog("initializing screenshot plugin\n");
+	plgRegisterMenuEntry(1, plgTranslate("Take Screenshot"), takeScreenShot);
 
+	if (ntrConfig->isNew3DS)
+		plgRegisterMenuEntry(1, plgTranslate("CPU Clock (New3DS Only)"), cpuClockUi);
+	
+	if (checkBacklightSupported())
+		plgRegisterMenuEntry(1, plgTranslate("Backlight"), backlightMenu);
 
+	plgRegisterMenuEntry(1, plgTranslate("Screen Filter"), nightShiftUi);
+    plgRegisterMenuEntry(1, plgTranslate("Themes"), themesMenu);
+    plgRegisterMenuEntry(1, plgTranslate("Power"), powerMenu);
+}
 
+/*
+*   IPCs
+*/
+void plgDoReboot() {
+	Handle hNSS = 0;
+	u32 ret;
+	ret = srv_getServiceHandle(NULL, &hNSS, "ns:s");
+	if (ret != 0) {
+		Log("open ns:s failed: %08x", ret, 0);
+		return;
+	}
+	u32* cmdbuf = getThreadCommandBuffer();
+	cmdbuf[0] = 0x00100180;
+	cmdbuf[1] = 0x00000000;
+	cmdbuf[2] = 0x00000000;
+	cmdbuf[3] = 0x00000000;
+	cmdbuf[4] = 0x00000000;
+	cmdbuf[5] = 0x00000000;
+	cmdbuf[6] = 0x00000000;
+	svc_sendSyncRequest(hNSS);
+	svc_closeHandle(hNSS);
+}
+
+void plgDoPowerOff() {
+	Handle hNSS = 0;
+	u32 ret;
+	ret = srv_getServiceHandle(NULL, &hNSS, "ns:s");
+	if (ret != 0) {
+		Log("open ns:s failed: %08x", ret, 0);
+		return;
+	}
+	u32* cmdbuf = getThreadCommandBuffer();
+	cmdbuf[0] = 0x000E0000;
+	cmdbuf[1] = 0x00000000;
+	cmdbuf[2] = 0x00000000;
+	cmdbuf[3] = 0x00000000;
+	cmdbuf[4] = 0x00000000;
+	cmdbuf[5] = 0x00000000;
+	cmdbuf[6] = 0x00000000;
+	svc_sendSyncRequest(hNSS);
+	svc_closeHandle(hNSS);
+}
+
+/*
+*   File handlers
+*/
+int sdf_open(char *filename, int mode){
+	FS_archive sdmcArchive = { 0x9, (FS_path){ PATH_EMPTY, 1, (u8*)"" } };
+
+	Handle hd;
+	Result retv;
+	FS_path filePath;
+
+	filePath.type = PATH_CHAR;
+	filePath.size = strlen(filename) + 1;
+	filePath.data = (u8*)filename;
+
+	retv = FSUSER_OpenFileDirectly(fsUserHandle, &hd, sdmcArchive, filePath, mode, 0);
+	if (retv < 0) return retv;
+
+	return hd;
+}
+
+int sdf_read(int fd, int offset, void *buf, int size){
+	u32 read_size;
+	Result retv;
+
+	retv = FSFILE_Read(fd, &read_size, offset, (u32*)buf, size);
+	if (retv < 0)
+		return retv;
+
+	return read_size;
+}
+
+int sdf_write(int fd, int offset, void *buf, int size){
+	u32 write_size;
+	Result retv;
+
+	retv = FSFILE_Write(fd, &write_size, offset, (u32*)buf, size, 0);
+	if (retv < 0)
+		return retv;
+
+	return write_size;
+}
+
+int sdf_close(int fd){
+	return FSFILE_Close(fd);
+}
