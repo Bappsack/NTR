@@ -441,7 +441,7 @@ u32 nightShiftUi() {
 u32 themesMenu(){
     u32 r;
     u8* entries[3];
-	entries[0] = plgTranslate("Red");
+	entries[0] = plgTranslate("Greyscale");
 	entries[1] = plgTranslate("Mist");
 	entries[2] = plgTranslate("Classic");
 	entries[3] = plgTranslate("Default");
@@ -451,7 +451,7 @@ u32 themesMenu(){
 		clear(0, 0, 320, 240, WHITE);
 		r = showMenu(plgTranslate("Themes"), 4, entries);
 		if (r == -1) break;
-		if (r == 0) {setTheme(RED, WHITE, BLACK); break;}
+		if (r == 0) {setTheme(0x999999, 0x111111, 0x444444); break;}
 		if (r == 1) {setTheme(0x8080, 0xD0EAF0, 0x40E0D0); break;}
         if (r == 2) {setTheme(WHITE, BLACK, RED); break;}
         if (r == 3) {setTheme(DARKGREY, GREEN, 0xEE9629); break;}
