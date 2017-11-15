@@ -1,3 +1,7 @@
+/*
+*   ui.c
+*/
+
 #include "global.h"
 
 u32 videoRef = 0;
@@ -18,9 +22,14 @@ void setTheme(u32 bg, u32 txt, u32 hdr){
     themeColorHdr = hdr;
 }
 
-int builtinDrawString(const char* str, int x, int y, u32 rgbTxt, u32 rgbBg, int newLine) {
-	int len = strlen(str);
+extern drawStringTypeDef plgDrawStringCallback;
+
+int drawString(const char* str, int x, int y, u32 rgbTxt, int newLine) {
+    int len = strlen(str);
 	int i, chWidth, currentX = x, totalLen = 0;
+    
+	if (plgDrawStringCallback) 
+        return plgDrawStringCallback(str, x, y, rgbTxt, themeColorBg, newLine);
 
 	for (i = 0; i < len; i++) {
 		chWidth = 8;
@@ -34,24 +43,15 @@ int builtinDrawString(const char* str, int x, int y, u32 rgbTxt, u32 rgbBg, int 
 			}
 			currentX = x;
 		}
-		paint_letter(str[i], currentX, y, rgbTxt, rgbBg, BOTTOM_FRAME1);
+		paint_letter(str[i], currentX, y, rgbTxt, themeColorBg, BOTTOM_FRAME1);
 		totalLen += chWidth;
 		currentX += chWidth;
 	}
 	return totalLen;
 }
 
-extern drawStringTypeDef plgDrawStringCallback;
-
-int drawString(const char* str, int x, int y, u32 rgbTxt, u32 rgbBg, int newLine) {
-	if (plgDrawStringCallback) {
-		return plgDrawStringCallback(str, x, y, rgbTxt, rgbBg, newLine);
-	}
-	return builtinDrawString(str, x, y, rgbTxt, rgbBg, newLine);
-}
-
 void print(const char* s, int x, int y, u32 rgbTxt){
-	drawString(s, x, y, rgbTxt, themeColorBg, 1);
+	drawString(s, x, y, rgbTxt, 1);
 }
 
 u32 getPhysAddr(u32 vaddr) {
@@ -188,9 +188,9 @@ void Log(const char* fmt, ...) {
 		typedef void(*funcType)(const char*);
 		((funcType)(ShowDbgFunc))(buff);
 		svc_sleepThread(1000000000);
-		return 0;
+		return;
 	}
-	if (!allowDirectScreenAccess) return 0;
+	if (!allowDirectScreenAccess) return;
     
 	acquireVideo();
 	while(1) {

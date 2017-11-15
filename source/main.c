@@ -22,10 +22,10 @@ RT_HOOK HomeFSReadHook;
 typedef u32(*FSReadTypeDef) (u32 a1, u32 a2, u32 a3, u32 a4, u32 buffer, u32 size);
 extern int _BootArgs[];
 
-RT_HOOK HomeCardUpdateInitHook;
-
+u32 ScreenshotHotkey = PAD_SELECT | PAD_START;
 u32 NTRMenuHotkey = PAD_X | PAD_Y;
-u32 ScreenshotHotkey = 0;
+
+RT_HOOK HomeCardUpdateInitHook;
 
 u32 initValuesFromFIRM() {
 	u32 kversion = *(unsigned int *)0x1FF80000;
@@ -109,7 +109,7 @@ Log("fatal. LR: %08x", lr, 0);
 releaseVideo();
 }
 
-void viewFile(FS_archive arc, u8 * path) {
+void viewFile(FS_archive arc, char* path) {
 	u8 buf[0x5000];
 	u32 off = 0;
 	u16 entry[0x228];
@@ -197,7 +197,7 @@ u32 isFileExist(char* fileName) {
 	Handle hFile = 0;
 	u32 ret;
 
-	FS_path testPath = (FS_path){ PATH_CHAR, strlen(fileName) + 1, fileName };
+	FS_path testPath = (FS_path){ PATH_CHAR, strlen(fileName) + 1, (u8*)fileName };
 	ret = FSUSER_OpenFileDirectly(fsUserHandle, &hFile, sdmcArchive, testPath, 1, 0);
 	if (ret != 0) {
 		return 0;
@@ -222,19 +222,6 @@ void magicKillProcess(u32 pid) {
 	svc_closeHandle(hProcess);
 }
 
-int cpuClockLockValue = -1;
-
-void lockCpuClock() {
-	if (cpuClockLockValue == -1) {
-		return;
-	}
-	svc_kernelSetState(10, cpuClockLockValue, 0, 0);
-}
-
-void setCpuClockLock(int v) {
-	cpuClockLockValue = v;
-}
-
 RT_HOOK HomeSetMemorySizeHook;
 typedef u32(*SetMemorySizeTypedef) (u32);
 
@@ -247,7 +234,6 @@ void threadStart() {
 	volatile vu32* ptr;
 	Handle testFileHandle = 0;
 	u32 i, ret;
-	int waitCnt = 0;
 
 	rtInitHook(&HomeFSReadHook, ntrConfig->HomeFSReadAddr, (u32)HomeFSReadCallback);
 	rtEnableHook(&HomeFSReadHook);
@@ -262,24 +248,23 @@ void threadStart() {
 	initSrv();
 	nsInitDebug();
 
-	if (isFileExist("/debug.flag")) nsInit();
+	if (isFileExist("/debug.flag")) startDebugger();
     
 	svc_sleepThread(1000000000);
 	plgInitFromInjectHOME();
+    
 	ntrToolsMain();
     
+    int waitCnt = 0;
 	while (1) {
-		if ((getKey()) == NTRMenuHotkey) {
+		if (getKey() == NTRMenuHotkey) {
 			if (allowDirectScreenAccess) {
 				plgShowMainMenu();
 			}
 		}
-		if ((ScreenshotHotkey != 0) && (getKey() == ScreenshotHotkey)) {
-			do_screen_shoot();
-		}
+		if (getKey() == ScreenshotHotkey) do_screen_shoot();
 		svc_sleepThread(100000000);
-		waitCnt += 1;
-		if (waitCnt % 10 == 0) lockCpuClock();
+		if ((waitCnt += 1) % 10 == 0) lockCpuClock();
 		checkExitFlag();
 	}
 }
@@ -307,7 +292,7 @@ void initConfigureMemory() {
 
 void startupFromInject() {
 	clearDisp(BLUE);
-	nsInit();
+	startDebugger();
 	clearDisp(RED);
 	svc_exitThread(0);
 }

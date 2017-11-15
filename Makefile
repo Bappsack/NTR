@@ -27,7 +27,7 @@ INCLUDES	:=	include include/jpeg
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft -O3
 
-CFLAGS	:=	-w \
+CFLAGS	:=	-Wall \
 			-fomit-frame-pointer -ffunction-sections -fdata-sections \
 			$(ARCH)
 

@@ -25,9 +25,6 @@ typedef enum
 	PAD_Y = (1<<11)
 }PAD_KEY;
 
-extern Handle hidMemHandle;
-extern vu32* hidSharedMem;
-
 Result hidInit(u32* sharedMem);
 void hidExit();
 

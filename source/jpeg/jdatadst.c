@@ -183,18 +183,6 @@ term_destination(j_compress_ptr cinfo)
 	my_dest_ptr dest = (my_dest_ptr)cinfo->dest;
 	size_t datacount = OUTPUT_BUF_SIZE - dest->pub.free_in_buffer;
 
-	/*
-	/* Write any data remaining in the buffer 
-	if (datacount > 0) {
-		if (JFWRITE(dest->outfile, dest->buffer, datacount) != datacount)
-			ERREXIT(cinfo, JERR_FILE_WRITE);
-	}
-	fflush(dest->outfile);
-	/* Make sure we wrote the output file OK 
-	if (ferror(dest->outfile))
-		ERREXIT(cinfo, JERR_FILE_WRITE);
-		*/
-
 	if (datacount > 0) {
 		rpSendBuffer(dest->buffer, datacount, 0x10);
 	}

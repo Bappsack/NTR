@@ -1,6 +1,7 @@
 
 #include "global.h"
 #include <ctr/SOC.h>
+#include <ctr/svc.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
@@ -121,11 +122,11 @@ u16 rtIntToPortNumber(u16 x) {
 	return *((u16*)buf);
 }
 
-u32 rtGetFileSize(u8* fileName) {
+u32 rtGetFileSize(char* fileName) {
 	u32 hFile, size, ret;
 	u64 size64 ;
 
-	FS_path testPath = (FS_path){PATH_CHAR, strlen(fileName) + 1, fileName};
+	FS_path testPath = (FS_path){PATH_CHAR, strlen(fileName) + 1, (u8*)fileName};
 	ret = FSUSER_OpenFileDirectly(fsUserHandle, &hFile, sdmcArchive, testPath, 7, 0);
 	if (ret != 0) {
 		ntrDebugLog("openFile failed: %08x\n", ret, 0);
@@ -149,13 +150,13 @@ final:
 	return size;
 }
 
-u32 rtLoadFileToBuffer(u8* fileName, u32* pBuf, u32 bufSize) {
+u32 rtLoadFileToBuffer(char* fileName, u32* pBuf, u32 bufSize) {
 	u32 ret;
 	u32 hFile, size;
 	u64 size64;
 	u32 tmp;
 	
-	FS_path testPath = (FS_path){PATH_CHAR, strlen(fileName) + 1, fileName};
+	FS_path testPath = (FS_path){PATH_CHAR, strlen(fileName) + 1, (u8*)fileName};
 	ret = FSUSER_OpenFileDirectly(fsUserHandle, &hFile, sdmcArchive, testPath, 7, 0);
 	if (ret != 0) {
 		ntrDebugLog("openFile failed: %08x\n", ret, 0);
@@ -170,15 +171,6 @@ u32 rtLoadFileToBuffer(u8* fileName, u32* pBuf, u32 bufSize) {
 	}
 
 	size = size64;
-	/*
-	if (bufSize == 0) {
-		ret = svc_controlMemory((u32*)&outAddr, 0, 0, size , 0x10003, 3);
-		if(ret != 0) {
-			ntrDebugLog("svc_controlMemory failed: %08x\n", ret, 0);
-			goto final;
-		}
-		*ppBuf = (u32*)outAddr;
-	}*/
 
 	if (bufSize < size) {
 		ntrDebugLog("rtLoadFileToBuffer: buffer too small\n");
@@ -214,9 +206,9 @@ u32 rtGetThreadReg(Handle hProcess, u32 tid, u32* ctx) {
 		return ret;
 	}
 	pKThread = kGetKProcessByHandle(hThread);
-	kmemcpy(ctx, (void*) pKThread, 160);
+	kmemcpy((void*)ctx, (void*) pKThread, 160);
 	pContext = ctx[0x8c / 4] - 0x10c;
-	kmemcpy(ctx, (void*) pContext, 0x10c);
+	kmemcpy((void*)ctx, (void*) pContext, 0x10c);
 	svc_closeHandle(hThread);
 	return 0;
 }

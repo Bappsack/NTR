@@ -4,6 +4,7 @@
 
 #ifndef _STRFUNC
 #define _STRFUNC
+#include <stdarg.h>
 
 #define _USE_XFUNC_OUT	1	/* 1: Use output functions */
 #define	_CR_CRLF		0	/* 1: Convert \n ==> \r\n in the output char */
@@ -20,7 +21,9 @@ void xputs (const char* str);
 void xfputs (void (*func)(unsigned char), const char* str);
 void xprintf (const char* fmt, ...);
 void xsprintf (char* buff, const char* fmt, ...);
+void xsprintf_va (char* buff, const char*	fmt, va_list arp);
 void xfprintf (void (*func)(unsigned char), const char*	fmt, ...);
+void xvprintf (const char*	fmt, va_list arp);
 void put_dump (const void* buff, unsigned long addr, int len, int width);
 #define DW_CHAR		sizeof(char)
 #define DW_SHORT	sizeof(short)

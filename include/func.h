@@ -35,7 +35,7 @@ u32 waitKey(void);
 u32 getKey(void);
 u32 initDirectScreenAccess(void);
 void delayUi(void);
-int drawString(const char* str, int x, int y, u32 rgbTxt, u32 rgbBg, int newLine);
+int drawString(const char* str, int x, int y, u32 rgbTxt, int newLine);
 void mdelay(u32 m);
 void print(const char* s, int x, int y, u32 rgbTxt);
 
@@ -43,18 +43,16 @@ void ntrToolsMain(void);
 void do_screen_shoot(void);
 
 void setThemeCol(u32 col);
-int builtinDrawString(const char* str, int x, int y, u32 rgbTxt, u32 rgbBg, int newLine);
 
 void mystrcat(char* a, char* b);
 void myitoa(u32 a, char* b);
-void dbg(u8* key, u32 value);
 
 void kernelCallback(u32 msr);
-void kmemcpy(void* dst, void* src, u32 size) ;
+void kmemcpy(void* dst, void* src, u32 size);
 void kSetCurrentKProcess(u32 ptr);
 u32 kGetCurrentKProcess(void);
 u32 kGetKProcessByHandle(u32 handle);
-u32 kSwapProcessPid(u32 kProcess, u32 newPid) ;
+u32 kSwapProcessPid(u32 kProcess, u32 newPid);
 void kRemotePlayCallback(void);
 
 void initFromInjectPM(void);
@@ -79,7 +77,7 @@ void nsHandlePacket(void);
 void nsMainLoop(void);
 void nsThreadStart(void);
 void nsInitDebug(void);
-void nsInit(void);
+void startDebugger(void);
 
 void backdoorHandler(void);
 

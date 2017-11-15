@@ -25,10 +25,8 @@ struct BitmapHeader{
 	u32  impcolors;
 } __attribute__((packed));
 
-void put_le32(void *dst, u32 val)
-{
+void put_le32(void *dst, u32 val){
 	u8 *dp = (u8*)dst;
-
 	dp[0] = val & 0xff;
 	dp[1] = (val >> 8) & 0xff;
 	dp[2] = (val >> 16) & 0xff;
@@ -37,7 +35,6 @@ void put_le32(void *dst, u32 val)
 
 void put_le16(void *dst, u32 val){
 	u8 *dp = (u8*)dst;
-
 	dp[0] = val & 0xff;
 	dp[1] = (val >> 8) & 0xff;
 }
@@ -461,9 +458,7 @@ u32 themesMenu(){
 	return 1;
 }
 
-void ntrToolsMain() {
-	u32 retv;
-
+void ntrToolsMain() {    
 	ntrDebugLog("initializing screenshot plugin\n");
 	plgRegisterMenuEntry(1, plgTranslate("Take Screenshot"), takeScreenShot);
 

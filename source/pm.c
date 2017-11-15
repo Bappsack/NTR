@@ -142,9 +142,9 @@ u32 getProcessTIDByHandle(u32 hProcess, u32 tid[]) {
 	u32  pKCodeSet, pKProcess, ret;
 
 	pKProcess = kGetKProcessByHandle(hProcess);
-	kmemcpy(bufKProcess, (void*)pKProcess, 0x100);
+	kmemcpy((void*)bufKProcess, (void*)pKProcess, 0x100);
 	pKCodeSet = *(u32*)(&bufKProcess[KProcessCodesetOffset]);
-	kmemcpy(bufKCodeSet, (void*)pKCodeSet, 0x100);
+	kmemcpy((void*)bufKCodeSet, (void*)pKCodeSet, 0x100);
 	u32* pTid = (u32*)(&bufKCodeSet[0x5c]);
 	tid[0] = pTid[0];
 	tid[1] = pTid[1];
@@ -164,9 +164,9 @@ u32 getProcessInfo(u32 pid, u8* pname, u32 tid[], u32* kpobj) {
 	}
 
 	pKProcess = kGetKProcessByHandle(hProcess);
-	kmemcpy(bufKProcess, (void*)pKProcess, 0x100);
+	kmemcpy((void*)bufKProcess, (void*)pKProcess, 0x100);
 	pKCodeSet = *(u32*)(&bufKProcess[KProcessCodesetOffset]);
-	kmemcpy(bufKCodeSet, (void*)pKCodeSet, 0x100);
+	kmemcpy((void*)bufKCodeSet, (void*)pKCodeSet, 0x100);
 	bufKCodeSet[0x5A] = 0;
 	u8* pProcessName = &bufKCodeSet[0x50];
 	u32* pTid = (u32*)(&bufKCodeSet[0x5c]);
@@ -287,7 +287,7 @@ void dumpCode(u32 base, u32 size, u8* fileName) {
 	while(off < size) {
 		Log("addr: %08x", base + off);
 		for (i = 0; i < 1000000; i++) {}
-		kmemcpy(tmpBuffer, (void*)(base + off), 0x1000);
+		kmemcpy((void*)tmpBuffer, (void*)(base + off), 0x1000);
 		FSFILE_Write(handle, &t, off, tmpBuffer, 0x1000, 0);
 		off += 0x1000;
 	}

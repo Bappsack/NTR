@@ -5,6 +5,8 @@ u32 KProcessHandleDataOffset;
 u32 KProcessPIDOffset;
 u32 KProcessCodesetOffset;
 
+int cpuClockLockValue = -1;
+
 void* currentBackdoorHandler = backdoorHandler;
 
 u32 keRefHandle(u32 pHandleTable, u32 handle) {
@@ -228,4 +230,15 @@ void kDoKernelHax() {
 void kRemotePlayCallback() {
 	kernelArgs[0] = 7;
 	svc_backDoor(currentBackdoorHandler);
+}
+
+//----------------------
+
+void lockCpuClock() {
+	if (cpuClockLockValue == -1) return;
+	svc_kernelSetState(10, cpuClockLockValue, 0, 0);
+}
+
+void setCpuClockLock(int v) {
+	cpuClockLockValue = v;
 }

@@ -127,7 +127,7 @@ void plgSetHotkeyUi() {
 	entries[3] = "Screenshot: SELECT+START";
 	entries[4] = "Screenshot: L+R";
 	while (1){
-		r = showMenu(NTR_CFW_VERSION, 5, entries);
+		r = showMenu("Hotkeys", 5, entries);
 		if (r == -1) {
 			break;
 		}
@@ -280,7 +280,6 @@ void plgShowMainMenu() {
 	entries[1] = plgTranslate("Enable Debugger");
 	entries[2] = plgTranslate("Set Hotkey");
 
-
 	pos = mainEntries;
 	for (i = 0; i < pluginEntryCount; i++) {
 		if (pluginEntry[i][0] == 1) {
@@ -295,28 +294,19 @@ void plgShowMainMenu() {
 	}
 	acquireVideo();
 	while (1) {
-		s32 r;
-		u8 buf[200];
-		r = showMenu(NTR_CFW_VERSION, pos, entries);
-		if (r == -1) {
-			break;
-		}
-		if (r == 0) {
-			processManager();
-		}
+		s32 r = showMenu(NTR_CFW_VERSION, pos, entries);
+		if (r == -1) break;
+		if (r == 0) processManager();
 		if (r == 1) {
-			if (g_nsConfig->hSOCU) {
-				Log(plgTranslate("Debugger has already been enabled."));
-				break;
-			}
-			else {
-				nsInit();
-				break;
-			}
-		}
-		if (r == 2) {
-			plgSetHotkeyUi();
-		}
+            if (g_nsConfig->hSOCU){
+                Log(plgTranslate("Debugger has already been enabled."));
+                break;
+            }else{
+                startDebugger();
+                break;
+            }
+        }
+		if (r == 2) plgSetHotkeyUi();
 		if (r >= mainEntries) {
 			if (r - mainEntries >= pluginEntryCount) {
 				plgShowGamePluginMenu();
@@ -324,23 +314,19 @@ void plgShowMainMenu() {
 			}
 			else {
 				u32 ret = ((funcType)((void*)(pluginEntry[entid[r]][2])))();
-				if (ret) {
-					break;
-				}
+				if (ret) break;
 			}
 		}
 
 	}
-
 	releaseVideo();
+    
 	debounceKey();
 	delayUi();
 }
 
 u32 plgRegisterMenuEntry(u32 catalog, char* title, void* callback) {
-	if (pluginEntryCount >= MAX_PLUGIN_ENTRY) {
-		return -1;
-	}
+	if (pluginEntryCount >= MAX_PLUGIN_ENTRY) return -1;
 	pluginEntry[pluginEntryCount][0] = catalog;
 	pluginEntry[pluginEntryCount][1] = (u32)title;
 	pluginEntry[pluginEntryCount][2] = (u32)callback;
@@ -371,7 +357,6 @@ u32 plgEnsurePoolEnd(u32 end) {
 	return 0;
 }
 
-
 void tryInitFS() {
 	u32 ret;
 	if (fsUserHandle) {
@@ -396,9 +381,6 @@ u32 plgLoadPluginToRemoteProcess(u32 hProcess) {
 	NS_CONFIG cfg;
 	u32 procTid[2];
 
-
-
-
 	if (hMenuProcess == 0) {
 		ret = svc_openProcess(&hMenuProcess, ntrConfig->HomeMenuPid);
 		if (ret != 0) {
@@ -417,7 +399,6 @@ u32 plgLoadPluginToRemoteProcess(u32 hProcess) {
 	}
 
 	getProcessTIDByHandle(hProcess, procTid);
-
 
 	ntrDebugLog("procTid: %08x%08x\n", procTid[1], procTid[0]);
 	if (!((procTid[0] == plgInfo.tid[0]) && (procTid[1] == plgInfo.tid[1]))) {
@@ -494,8 +475,6 @@ u32 svc_RunCallback(Handle hProcess, u32* startInfo) {
 	return ((svc_RunTypeDef)((void*)(svc_RunHook.callCode)))(hProcess, startInfo);
 }
 
-
-
 void initFromInjectPM() {
 	u32 ret;
 
@@ -503,7 +482,7 @@ void initFromInjectPM() {
 	rtEnableHook(&svc_RunHook);
 }
 
-u32 plgListPlugins(u32* entries, u8* buf, u8* path)  {
+u32 plgListPlugins(u32* entries, u8* buf, char* path)  {
 	u32 maxPlugins = 32;
 	u32 off = 0;
 	u16 entry[0x228];
@@ -511,7 +490,7 @@ u32 plgListPlugins(u32* entries, u8* buf, u8* path)  {
 	u32 entryCount = 0;
 	u32 dirHandle;
 	u32 ret = 0;
-	FS_path dirPath = (FS_path){ PATH_CHAR, strlen(path) + 1, path };
+	FS_path dirPath = (FS_path){ PATH_CHAR, strlen(path) + 1, (u8*)path };
 
 	ret = FSUSER_OpenDirectory(fsUserHandle, &dirHandle, plgSdmcArchive, dirPath);
 	if (ret != 0) {
@@ -546,7 +525,6 @@ u32 plgStartPluginLoad() {
 	g_plgInfo->arm11BinSize = arm11BinSize;
 }
 
-
 char* plgTranslate(char* origText) {
 	if (plgTranslateCallback) {
 		char* ret = plgTranslateCallback(origText);
@@ -556,6 +534,7 @@ char* plgTranslate(char* origText) {
 	}
 	return origText;
 }
+
 u32 plgSetValue(u32 index, u32 value) {
 	if (index == VALUE_CURRENT_LANGUAGE) {
 		g_plgInfo->currentLanguage = value;
@@ -679,9 +658,6 @@ void startHomePlugin() {
 	}
 }
 
-
-
-
 void plgInitFromInjectHOME() {
 	u32 base = plgPoolStart;
 	u32 ret;
@@ -732,7 +708,6 @@ void plgInitFromInjectHOME() {
 	injectPM();
 }
 
-
 u32 plgSearchReverse(u32 endAddr, u32 startAddr, u32 pat) {
 	if (endAddr == 0) {
 		return 0;
@@ -778,37 +753,6 @@ RT_HOOK SetBufferSwapHook;
 
 typedef u32(*SetBufferSwapTypedef) (u32 isDisplay1, u32 a2, u32 addr, u32 addrB, u32 width, u32 a6, u32 a7);
 
-
-/*
-u32 plgNightShiftFramebufferLevel2(u32 addr, u32 stride, u32 height, u32 format) {
-	format &= 0x0f;
-	if (format == 2) {
-		u16* sp = (u16*)addr;
-		u16* spEnd = (u16*)(addr + stride * height);
-		while (sp < spEnd) {
-			u16 pix = *sp;
-			u16 b = (pix & 0x1f);
-			pix &= 0xffe0;
-			pix |= b >> 2;
-			*sp = pix;
-			sp++;
-		}
-	}
-	else if (format == 1) {
-		u8* sp = (u8*)addr;
-		u8* spEnd = (u8*)(addr + stride * height);
-		while (sp < spEnd) {
-			sp[0] >>= 2;
-			sp += 3;
-		}
-	}
-	svc_flushProcessDataCache(0xffff8001, (u32)addr, stride * height);
-	return 0;
-}
-*/
-
-
-
 u32 plgNightShiftFramebuffer(u32 addr, u32 stride, u32 height, u32 format);
 
 u32 plgOverlayNightShift(u32 isDisplay1, u32 addr, u32 addrB, u32 width, u32 format) {
@@ -823,7 +767,6 @@ u32 plgOverlayNightShift(u32 isDisplay1, u32 addr, u32 addrB, u32 width, u32 for
 		plgNightShiftFramebuffer(addr, width, 320, format);
 	}
 
-
 	return 0;
 }
 
@@ -835,9 +778,7 @@ u32 plgSetBufferSwapCallback(u32 isDisplay1, u32 a2, u32 addr, u32 addrB, u32 wi
 	int isDirty = 0;
 
 	if ((addr >= 0x1f000000) && (addr < 0x1f600000)) {
-		if (!isVRAMAccessible) {
-			goto final;
-		}
+		if (!isVRAMAccessible) goto final;
 	}
 	
 	svc_invalidateProcessDataCache(CURRENT_PROCESS_HANDLE, (u32)addr, width * height);
@@ -872,9 +813,7 @@ final:
 }
 
 void plgInitScreenOverlay() {
-	if (plgOverlayStatus) {
-		return;
-	}
+	if (plgOverlayStatus) return;
 	plgOverlayStatus = 2;
 
 	if (rtCheckRemoteMemoryRegionSafeForWrite(getCurrentProcessHandle(), 0x1F000000, 0x00600000) == 0) {
@@ -897,10 +836,8 @@ void plgInitScreenOverlay() {
 	}
 	ntrDebugLog("overlay addr: %08x, %08x\n", addr, fp);
 	
-	if (!fp) {
-		
-		return;
-	}
+	if (!fp) return;
+    
 	rtInitHook(&SetBufferSwapHook, fp, plgSetBufferSwapCallback);
 	rtEnableHook(&SetBufferSwapHook);
 	plgOverlayStatus = 1;
@@ -913,8 +850,6 @@ void initFromInjectGame() {
 
 	initSharedFunc();
 
-	
-
 	g_plgInfo = (PLGLOADER_INFO*)plgPoolStart;
 	if (g_plgInfo->nightShiftLevel) {
 		plgInitScreenOverlay();
@@ -925,14 +860,8 @@ void initFromInjectGame() {
 	}
 }
 
-
-
 u32 plgRequestTempBuffer(u32 size) {
-
 	plgStartPluginLoad();
-	if (plgEnsurePoolEnd(plgNextLoadAddr + size) != 0) {
-		return 0;
-	}
+	if (plgEnsurePoolEnd(plgNextLoadAddr + size) != 0) return 0;
 	return plgNextLoadAddr;
-
 }

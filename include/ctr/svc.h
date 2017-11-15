@@ -59,7 +59,7 @@ typedef enum{
 	Result svc_setThreadIdealProcessor(Handle handle, u32 processorid);
 	Result svc_restartDma(Handle h, void * dst, void const* src, unsigned int size, signed char flag);
 	Result svc_kernelSetState(unsigned int Type, unsigned int Param0, unsigned int Param1, unsigned int Param2);
-
+    Result svc_openThread(Handle* thread,Handle process, u32 threadId);
 	/**
 	* @brief Maps a block of process memory.
 	* @param process Handle of the process.
