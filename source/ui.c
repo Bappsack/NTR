@@ -24,34 +24,27 @@ void setTheme(u32 bg, u32 txt, u32 hdr){
 
 extern drawStringTypeDef plgDrawStringCallback;
 
-int drawString(const char* str, int x, int y, u32 rgbTxt, int newLine) {
+void drawString(const char* str, int x, int y, u32 rgbTxt) {
     int len = strlen(str);
-	int i, chWidth, currentX = x, totalLen = 0;
+	int i, chWidth, currentX = x;
     
 	if (plgDrawStringCallback) 
-        return plgDrawStringCallback(str, x, y, rgbTxt, themeColorBg, newLine);
+        return plgDrawStringCallback(str, x, y, rgbTxt, themeColorBg);
 
 	for (i = 0; i < len; i++) {
 		chWidth = 8;
-		if (currentX + chWidth > BOTTOM_WIDTH) {
-			if (!newLine) {
-				return totalLen;
-			}
-			y += 12;
-			if (y + 12 > BOTTOM_HEIGHT) {
-				return totalLen;
-			}
-			currentX = x;
-		}
-		paint_letter(str[i], currentX, y, rgbTxt, themeColorBg, BOTTOM_FRAME1);
-		totalLen += chWidth;
-		currentX += chWidth;
+		if (str[i] == '\n' || str[i] == '\r' || currentX + chWidth > BOTTOM_WIDTH){
+            currentX = x;
+            y += 12;
+        } else {
+            paint_letter(str[i], currentX, y, rgbTxt, themeColorBg, BOTTOM_FRAME1);
+            currentX += chWidth;
+        }
 	}
-	return totalLen;
 }
 
 void print(const char* s, int x, int y, u32 rgbTxt){
-	drawString(s, x, y, rgbTxt, 1);
+	drawString(s, x, y, rgbTxt);
 }
 
 u32 getPhysAddr(u32 vaddr) {

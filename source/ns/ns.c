@@ -562,13 +562,13 @@ void rpCaptureScreen(int isTop) {
 	rpHDma[isTop] = 0;
 
 	if (isInVRAM(phys)) {
-		svc_startInterProcessDma(&rpHDma[isTop], CURRENT_PROCESS_HANDLE, dest, hProcess, 0x1F000000 + (phys - 0x18000000), bufSize, dmaConfig);
+		svc_startInterProcessDma(&rpHDma[isTop], CURRENT_PROCESS_HANDLE, dest, hProcess, 0x1F000000 + (phys - 0x18000000), bufSize, (u32*)dmaConfig);
 		return;
 	}
 	else if (isInFCRAM(phys)) {
 		hProcess = rpGetGameHandle();
 		if (hProcess) {
-			svc_startInterProcessDma(&rpHDma[isTop], CURRENT_PROCESS_HANDLE, dest, hProcess, rpGameFCRAMBase + (phys - 0x20000000), bufSize, dmaConfig);
+			svc_startInterProcessDma(&rpHDma[isTop], CURRENT_PROCESS_HANDLE, dest, hProcess, rpGameFCRAMBase + (phys - 0x20000000), bufSize, (u32*)dmaConfig);
 		}
 
 		return;

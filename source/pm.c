@@ -385,8 +385,7 @@ void processManager() {
 		if (act == 1) {
 			pname[10] = 0;
 			getProcessInfo(pids[r], pname, tid, &t);
-			Log("pname: %s", (u32)pname, 0);
-			Log("tid: %08x%08x", tid[1], tid[0]);
+			Log("PName: %s\nTID: %08x%08x", (u32)pname, tid[1], tid[0]);
 		}
 	}
 }

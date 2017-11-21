@@ -35,7 +35,7 @@ u32 waitKey(void);
 u32 getKey(void);
 u32 initDirectScreenAccess(void);
 void delayUi(void);
-int drawString(const char* str, int x, int y, u32 rgbTxt, int newLine);
+void drawString(const char* str, int x, int y, u32 rgbTxt);
 void mdelay(u32 m);
 void print(const char* s, int x, int y, u32 rgbTxt);
 
@@ -81,7 +81,7 @@ void startDebugger(void);
 
 void backdoorHandler(void);
 
-typedef int(*drawStringTypeDef)  (const char* str, int x, int y, u32 rgbTxt, u32 rgbBg, int newLine);
+typedef int(*drawStringTypeDef)  (const char* str, int x, int y, u32 rgbTxt, u32 rgbBg);
 typedef char* (*translateTypeDef) (char* str);
 char* plgTranslate(char* origText);
 
