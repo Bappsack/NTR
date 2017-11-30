@@ -1,6 +1,6 @@
 #define IS_PLUGIN 0
 
-#define NTR_CFW_VERSION "NTR 3.61"
+#define NTR_CFW_VERSION "NTR 3.62"
 #include "main.h"
 
 #include "memory.h"

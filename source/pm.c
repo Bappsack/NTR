@@ -18,7 +18,7 @@ u32 getCurrentProcessHandle() {
 	svc_getProcessId(&currentPid, 0xffff8001);
 	ret = svc_openProcess(&handle, currentPid);
 	if (ret != 0) {
-		Log("openProcess failed, ret: %08x", ret, 0);
+		Log("openProcess failed, ret: %08x", ret);
 		return 0;
 	}
 	hCurrentProcess = handle;
@@ -40,7 +40,7 @@ u32 mapRemoteMemory(Handle hProcess, u32 addr, u32 size) {
 	kSetCurrentKProcess(oldKP);
     
 	if (ret != 0) {
-		Log("svc_controlMemory failed: %08x", ret, 0);
+		Log("svc_controlMemory failed: %08x", ret);
 		return ret;
 	}
 	if (outAddr != addr) {
@@ -64,7 +64,7 @@ u32 mapRemoteMemoryInSysRegion(Handle hProcess, u32 addr, u32 size) {
 	kSetCurrentKProcess(oldKP);
 	kSwapProcessPid(newKP, oldPid);
 	if (ret != 0) {
-		Log("svc_controlMemory failed: %08x", ret, 0);
+		Log("svc_controlMemory failed: %08x", ret);
 		return ret;
 	}
 	if (outAddr != addr) {
@@ -127,7 +127,7 @@ u32 copyRemoteMemory(Handle hDst, void* ptrDst, Handle hSrc, void* ptrSrc, u32 s
 	}
 
 	if (i >= 10000) {
-		Log("readRemoteMemory time out %08x", state, 0);
+		Log("readRemoteMemory time out %08x", state);
 		return 1;
 	}
 
@@ -159,7 +159,7 @@ u32 getProcessInfo(u32 pid, u8* pname, u32 tid[], u32* kpobj) {
 	ret = 0;
 	ret = svc_openProcess(&hProcess, pid);
 	if (ret != 0) {
-		ntrDebugLog("openProcess failed: %08x\n", ret, 0);
+		ntrDebugLog("openProcess failed: %08x\n", ret);
 		goto final;
 	}
 
@@ -192,12 +192,12 @@ void dumpRemoteProcess(u32 pid, u8* fileName, u32 startAddr) {
 	FS_path testPath = (FS_path){PATH_CHAR, strlen(fileName) + 1, fileName};
 	ret = FSUSER_OpenFileDirectly(fsUserHandle, &hFile, sdmcArchive, testPath, 7, 0);
 	if (ret != 0) {
-		Log("openFile failed: %08x", ret, 0);
+		Log("openFile failed: %08x", ret);
 		goto final;
 	}
 	ret = svc_openProcess(&hProcess, pid);
 	if (ret != 0) {
-		Log("openProcess failed: %08x", ret, 0);
+		Log("openProcess failed: %08x", ret);
 		goto final;
 	}
 
@@ -208,11 +208,11 @@ void dumpRemoteProcess(u32 pid, u8* fileName, u32 startAddr) {
 		memset(buf, 0, sizeof(buf));
 		ret = protectRemoteMemory(hProcess, (void*)addr, 0x1000);
 		if (ret != 0) {
-			Log("dump finished at addr: %08x", addr, 0);
+			Log("dump finished at addr: %08x", addr);
 			goto final;
 		}
 		ret = copyRemoteMemory(0xffff8001, buf, hProcess, (void*)addr, 0x1000);
-		if (ret != 0) Log("readRemoteMemory failed: %08x", ret, 0);
+		if (ret != 0) Log("readRemoteMemory failed: %08x", ret);
 		FSFILE_Write(hFile, &t, off, (u32*)buf, 0x1000, 0);	
 		off += 0x1000;
 	}
@@ -236,14 +236,14 @@ void dumpRemoteProcess2(u32 pid, u8* fileName) {
 	FS_path testPath = (FS_path){PATH_CHAR, strlen(fileName) + 1, fileName};
 	ret = FSUSER_OpenFileDirectly(fsUserHandle, &hfile, sdmcArchive, testPath, 7, 0);
 	if (ret != 0) {
-		Log("openFile failed: %08x", ret, 0);
+		Log("openFile failed: %08x", ret);
 		goto final;
 	}
 	Log("hfile: %08x", hfile, 0);
 
 	ret = svc_debugActiveProcess(&hdebug, pid);
 	if (ret != 0) {
-		Log("debugActiveProcess failed: %08x", ret, 0);
+		Log("debugActiveProcess failed: %08x", ret);
 		goto final;
 	}
 	Log("hdebug: %08x", hdebug, 0);
@@ -357,7 +357,7 @@ void processManager() {
 
 	ret = svc_getProcessList(&pidCount, pids, 100);
 	if (ret != 0) {
-		Log("getProcessList failed: %08x", ret, 0);
+		Log("getProcessList failed: %08x", ret);
 		return;
 	}
 

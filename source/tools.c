@@ -235,7 +235,7 @@ u32 cpuClockUi(){
 		if (res == -1) break;
 		if ((res >= 0) && (res <= 3)) {
 			u32 ret = svc_kernelSetState(10, res, 0, 0);
-			if (ret != 0) Log("kernelSetState failed: %08x", ret, 0);
+			if (ret != 0) Log("kernelSetState failed: %08x", ret);
 			setCpuClockLock(res);
 			break;
 		}
@@ -458,18 +458,38 @@ u32 themesMenu(){
 	return 1;
 }
 
+u32 infoMenu(){   
+    acquireVideo();
+    Log(plgTranslate(
+        "Kernel: %d.%d.%d\n"
+        "Firm: %d.%d.%d\n"
+        "Unit: %s\n"
+        "Mac Addr: %02X:%02X:%02X:%02X:%02X:%02X\n"
+    ),
+    *(u8*)0x1FF80003, *(u8*)0x1FF80002, *(u8*)0x1FF80001,
+    *(u8*)0x1FF80063, *(u8*)0x1FF80062, *(u8*)0x1FF80061,
+    *(u8*)0x1FF80015 == 0 ? "Prod" : "Dev",
+    *(u8*)0x1FF81060,*(u8*)0x1FF81061,*(u8*)0x1FF81062,*(u8*)0x1FF81063,*(u8*)0x1FF81064,*(u8*)0x1FF81065
+    );
+    releaseVideo();
+    
+    return 1;
+}
+
 void ntrToolsMain() {    
 	ntrDebugLog("initializing screenshot plugin\n");
+    
+    if (ntrConfig->isNew3DS)
+		plgRegisterMenuEntry(1, plgTranslate("CPU Clock"), cpuClockUi);
+    
 	plgRegisterMenuEntry(1, plgTranslate("Take Screenshot"), takeScreenShot);
-
-	if (ntrConfig->isNew3DS)
-		plgRegisterMenuEntry(1, plgTranslate("CPU Clock (New3DS Only)"), cpuClockUi);
 	
 	if (checkBacklightSupported())
 		plgRegisterMenuEntry(1, plgTranslate("Backlight"), backlightMenu);
 
 	plgRegisterMenuEntry(1, plgTranslate("Screen Filter"), nightShiftUi);
     plgRegisterMenuEntry(1, plgTranslate("Themes"), themesMenu);
+    plgRegisterMenuEntry(1, plgTranslate("Info"), infoMenu);
     plgRegisterMenuEntry(1, plgTranslate("Power"), powerMenu);
 }
 
@@ -481,7 +501,7 @@ void plgDoReboot() {
 	u32 ret;
 	ret = srv_getServiceHandle(NULL, &hNSS, "ns:s");
 	if (ret != 0) {
-		Log("open ns:s failed: %08x", ret, 0);
+		Log("open ns:s failed: %08x", ret);
 		return;
 	}
 	u32* cmdbuf = getThreadCommandBuffer();
@@ -501,7 +521,7 @@ void plgDoPowerOff() {
 	u32 ret;
 	ret = srv_getServiceHandle(NULL, &hNSS, "ns:s");
 	if (ret != 0) {
-		Log("open ns:s failed: %08x", ret, 0);
+		Log("open ns:s failed: %08x", ret);
 		return;
 	}
 	u32* cmdbuf = getThreadCommandBuffer();

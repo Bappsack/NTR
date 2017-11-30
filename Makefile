@@ -31,7 +31,7 @@ CFLAGS	:=	-Wall \
 			-fomit-frame-pointer -ffunction-sections -fdata-sections \
 			$(ARCH)
 
-CFLAGS	+=	$(INCLUDE)
+CFLAGS	+=	$(INCLUDE) -DHAS_JPEG=1
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 

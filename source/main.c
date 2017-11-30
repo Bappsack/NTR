@@ -105,7 +105,7 @@ void setExitFlag() {
 
 void onFatalError(u32 lr) {
 acquireVideo();
-Log("fatal. LR: %08x", lr, 0);
+Log("fatal. LR: %08x", lr);
 releaseVideo();
 }
 
@@ -134,9 +134,7 @@ void viewFile(FS_archive arc, char* path) {
 		captions[entryCount] = &buf[off];
 		for (i = 0; i < 0x228; i++) {
 			u16 t = entry[i];
-			if (t == 0) {
-				break;
-			}
+			if (t == 0) break;
 			buf[off] = (u8)t;
 			off += 1;
 		}
@@ -150,25 +148,11 @@ void viewFile(FS_archive arc, char* path) {
 	}
 	while (1) {
 		s32 r = showMenu(path, entryCount, captions);
-		if (r == -1) {
-			break;
-		}
+		if (r == -1) break;
 		xsprintf((u8*)entry, "%s%s", path, captions[r]);
 		viewFile(arc, (u8*)entry);
 	}
 	FSDIR_Close(dirHandle);
-}
-
-void fileManager() {
-	FS_archive arc;
-	arc = (FS_archive){ 0x567890AB, (FS_path){ PATH_EMPTY, 1, (u8*)"" } };
-	u32 ret = FSUSER_OpenArchive(fsUserHandle, &arc);
-	if (ret != 0) {
-		Log("openArchive failed, ret=%08x", ret);
-		return;
-	}
-	viewFile(arc, "/");
-	FSUSER_CloseArchive(fsUserHandle, &arc);
 }
 
 void checkExitFlag() {
@@ -199,35 +183,9 @@ u32 isFileExist(char* fileName) {
 
 	FS_path testPath = (FS_path){ PATH_CHAR, strlen(fileName) + 1, (u8*)fileName };
 	ret = FSUSER_OpenFileDirectly(fsUserHandle, &hFile, sdmcArchive, testPath, 1, 0);
-	if (ret != 0) {
-		return 0;
-	}
+	if (ret != 0) return 0;
 	FSFILE_Close(hFile);
 	return 1;
-}
-
-void magicKillProcess(u32 pid) {
-	Handle hProcess;
-	u32 ret = 0;
-	ret = svc_openProcess(&hProcess, pid);
-	if (ret != 0) {
-		return;
-	}
-	u32 KProcess = kGetKProcessByHandle(hProcess);
-	u32 t = 0;
-	kmemcpy(&t, KProcess + 4, 4);
-	//Log("refcount: %08x", t, 0);
-	t = 1;
-	kmemcpy(KProcess + 4, &t, 4);
-	svc_closeHandle(hProcess);
-}
-
-RT_HOOK HomeSetMemorySizeHook;
-typedef u32(*SetMemorySizeTypedef) (u32);
-
-u32 HomeSetMemorySizeCallback(u32 size) {
-	size -= 0x00100000;
-	return ((SetMemorySizeTypedef)((void*)HomeSetMemorySizeHook.callCode))(size);
 }
 
 void threadStart() {
@@ -287,7 +245,6 @@ void initConfigureMemory() {
 		g_nsConfig->initMode = 0;
 		return;
 	}
-	
 }
 
 void startupFromInject() {
@@ -310,12 +267,7 @@ void injectToHomeMenu() {
 	svc_closeHandle(hProcess);
 }
 
-void doSomething() {
-	u32 i; for (i = 0; i < 10; i++) svc_sleepThread(10000000);
-}
-
 void loadParams() {
-
 	KProcessCodesetOffset = ntrConfig->KProcessCodesetOffset;
 	KProcessHandleDataOffset = ntrConfig->KProcessHandleDataOffset;
 	KProcessPIDOffset = ntrConfig->KProcessPIDOffset;
@@ -409,7 +361,7 @@ void injectStartMode(){
     rtFlushInstructionCache((void*)oldPC, 8);
     rtGenerateJumpCode(oldPC, (void*)_ReturnToUser);
     rtFlushInstructionCache((void*)_ReturnToUser, 8);
-    doSomething();
+    svc_sleepThread(100000000);
 
     u32 currentPid = getCurrentProcessId();
     Handle handle;
@@ -433,8 +385,7 @@ void injectStartMode(){
         if (currentPid == ntrConfig->PMPid) {
             // load from pm
             initFromInjectPM();
-        }
-        else {
+        } else {
             if (g_nsConfig->startupCommand == NS_STARTCMD_INJECTGAME) {
                 clearDisp(GREEN);
                 initFromInjectGame();

@@ -69,7 +69,7 @@ const char * const jpeg_std_message_table[] = {
 METHODDEF(void)
 error_exit (j_common_ptr cinfo)
 {
-	Log("error_exit", 0, 0);
+	Log("error_exit");
   /* Always display the message */
   (*cinfo->err->output_message) (cinfo);
 
@@ -98,7 +98,7 @@ error_exit (j_common_ptr cinfo)
 METHODDEF(void)
 output_message (j_common_ptr cinfo)
 {
-	Log("output_message", 0, 0);
+	Log("output_message");
   char buffer[JMSG_LENGTH_MAX];
 
   /* Create the message */
@@ -111,7 +111,7 @@ output_message (j_common_ptr cinfo)
 #else
   /* Send it to stderr, adding a newline */
   ntrDebugLog("%s\n", buffer);
-  Log("%s\n", buffer, 0);
+  Log("%s\n", buffer);
 #endif
 }
 
