@@ -6,15 +6,10 @@
 * removed all uneeded Stuff (outside of Remote Debugging features.
 * reduced crash chance on load
 * removed NTR Wireless Streaming Ability
+* no menu anymore
+* debugger auto enabled.
 * works with recent added pm reimp from Luma3DS
 * doesnt copy itself into many processes.
 
 **Features:**
-* Process Manager
 * Debugger
-* Set Hotkeys
-* Take Screenshot
-* Set CPU Clock (N3DS only)
-* Screen filters
-* Menu Themes
-* Power options
