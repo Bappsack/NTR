@@ -102,13 +102,15 @@ void setExitFlag() {
 	g_nsConfig->exitFlag = 1;
 	svc_closeHandle(g_nsConfig->hSOCU);
 }
-
+/*
 void onFatalError(u32 lr) {
 acquireVideo();
 Log("fatal. LR: %08x", lr);
 releaseVideo();
 }
+*/
 
+/*
 void viewFile(FS_archive arc, char* path) {
 	u8 buf[0x5000];
 	u32 off = 0;
@@ -154,6 +156,7 @@ void viewFile(FS_archive arc, char* path) {
 	}
 	FSDIR_Close(dirHandle);
 }
+*/
 
 void checkExitFlag() {
 	if (g_nsConfig->exitFlag) {
@@ -173,10 +176,12 @@ u32 HomeFSReadCallback(u32 a1, u32 a2, u32 a3, u32 a4, u32 buffer, u32 size) {
 	return ret;
 }
 
+
 u32 HomeCardUpdateInitCallback() {
 	return 0xc821180b; // card update is not needed
 }
 
+/*
 u32 isFileExist(char* fileName) {
 	Handle hFile = 0;
 	u32 ret;
@@ -187,6 +192,7 @@ u32 isFileExist(char* fileName) {
 	FSFILE_Close(hFile);
 	return 1;
 }
+*/
 
 void threadStart() {
 	volatile vu32* ptr;
@@ -206,21 +212,15 @@ void threadStart() {
 	initSrv();
 	nsInitDebug();
 
-	if (isFileExist("/debug.flag")) startDebugger();
+	startDebugger();
     
 	svc_sleepThread(1000000000);
-	plgInitFromInjectHOME();
+	//plgInitFromInjectHOME();
     
-	ntrToolsMain();
+	//ntrToolsMain();
     
     int waitCnt = 0;
 	while (1) {
-		if (getKey() == NTRMenuHotkey) {
-			if (allowDirectScreenAccess) {
-				plgShowMainMenu();
-			}
-		}
-		if (getKey() == ScreenshotHotkey) do_screen_shoot();
 		svc_sleepThread(100000000);
 		if ((waitCnt += 1) % 10 == 0) lockCpuClock();
 		checkExitFlag();
@@ -382,15 +382,19 @@ void injectStartMode(){
             svc_createThread(&handle, (void*)startupFromInject, 0, &threadStack[(THREAD_STACK_SIZE / 4) - 10], 0x3f, 0xFFFFFFFE);
             svc_sleepThread(1000000000);
         }
+		/*
         if (currentPid == ntrConfig->PMPid) {
             // load from pm
             initFromInjectPM();
-        } else {
+		}
+				
+		else {
             if (g_nsConfig->startupCommand == NS_STARTCMD_INJECTGAME) {
                 clearDisp(GREEN);
                 initFromInjectGame();
             }
         }
+		*/
     }
 }
 

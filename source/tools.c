@@ -122,7 +122,7 @@ void rev_image(u8 *dst, int width, int height, u8 *src, int src_pitch, int forma
 		}
 	}
 }
-
+/*
 int get_file_index(void){
 	int fd;
 	char name[64];
@@ -138,6 +138,7 @@ int get_file_index(void){
 
 	return id;
 }
+*/
 
 void allocImageBuf() {
 	if (image_buf) return;
@@ -145,7 +146,7 @@ void allocImageBuf() {
 	ntrDebugLog("    out_addr: %08x", out_addr);
 	image_buf = (u8*)out_addr;
 }
-
+/*
 void do_screen_shoot(){
 	u32 tl_fbaddr[2];
 	u32 bl_fbaddr[2];
@@ -203,7 +204,8 @@ void do_screen_shoot(){
     
 	clearDisp(MAGENTA);
 }
-
+*/
+/*
 u32 takeScreenShot(){
 	vu32 i;
 	u32 ret, out_addr;
@@ -214,12 +216,12 @@ u32 takeScreenShot(){
 	controlVideo(CONTROLVIDEO_ACQUIREVIDEO, 0, 0, 0);
 	return 1;
 }
-
+*/
 /*
 *   Menu functions
 */
 extern PLGLOADER_INFO *g_plgInfo;
-
+/*
 u32 cpuClockUi(){
 	u8 buf[200];
 	acquireVideo();
@@ -266,12 +268,13 @@ u32 powerMenu() {
 	releaseVideo();
 	return 1;
 }
-
+*/
 int GSPPid = 0x14;
 int isGSPPatchRequired = 0;
 u32 gspPatchAddr = 0;
 int bklightValue = 50;
 
+/*
 int checkBacklightSupported() {
 
 	Handle hGSPProcess = 0;
@@ -337,8 +340,9 @@ int patchGSP() {
 	}
 	return ret;
 }
+*/
 
-
+/*
 void updateBklight() {
 	u32 t;
 	t = bklightValue * 2;
@@ -396,7 +400,8 @@ u32 backlightMenu() {
 	}
 	return 1;
 }
-
+*/
+/*
 u32 nightShiftUi() {
 	int configUpdated = 0;
 	u8* entries[11];
@@ -434,7 +439,8 @@ u32 nightShiftUi() {
 	}
 	return 1;
 }
-
+*/
+/*
 u32 themesMenu(){
     u32 r;
     u8* entries[3];
@@ -457,7 +463,8 @@ u32 themesMenu(){
 
 	return 1;
 }
-
+*/
+/*
 u32 infoMenu(){   
     acquireVideo();
     Log(plgTranslate(
@@ -475,7 +482,9 @@ u32 infoMenu(){
     
     return 1;
 }
+*/
 
+/*
 void ntrToolsMain() {    
 	ntrDebugLog("initializing screenshot plugin\n");
     
@@ -492,10 +501,11 @@ void ntrToolsMain() {
     plgRegisterMenuEntry(1, plgTranslate("Info"), infoMenu);
     plgRegisterMenuEntry(1, plgTranslate("Power"), powerMenu);
 }
-
+*/
 /*
 *   IPCs
 */
+/*
 void plgDoReboot() {
 	Handle hNSS = 0;
 	u32 ret;
@@ -515,7 +525,8 @@ void plgDoReboot() {
 	svc_sendSyncRequest(hNSS);
 	svc_closeHandle(hNSS);
 }
-
+*/
+/*
 void plgDoPowerOff() {
 	Handle hNSS = 0;
 	u32 ret;
@@ -535,10 +546,11 @@ void plgDoPowerOff() {
 	svc_sendSyncRequest(hNSS);
 	svc_closeHandle(hNSS);
 }
-
+*/
 /*
 *   File handlers
 */
+/*
 int sdf_open(char *filename, int mode){
 	FS_archive sdmcArchive = { 0x9, (FS_path){ PATH_EMPTY, 1, (u8*)"" } };
 
@@ -581,3 +593,4 @@ int sdf_write(int fd, int offset, void *buf, int size){
 int sdf_close(int fd){
 	return FSFILE_Close(fd);
 }
+*/
